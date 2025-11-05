@@ -2,6 +2,7 @@ local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 
 getgenv().DNggUI_values = getgenv().DNggUI_values or {}
+getgenv().scriptName = getgenv().scriptName or nil
 
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "DNggHubUI_Lib"
@@ -22,7 +23,7 @@ local title = Instance.new("TextLabel", main)
 title.Size = UDim2.new(1, -70, 0, 30)
 title.Position = UDim2.new(0, 10, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "DNgg Hub UI"
+title.Text = scriptName or "DNgg Hub"
 title.TextSize = 16
 title.Font = Enum.Font.SourceSansBold
 title.TextColor3 = Color3.fromRGB(220, 230, 255)
