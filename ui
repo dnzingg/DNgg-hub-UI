@@ -1,0 +1,187 @@
+local UI = {}
+local Player = game:GetService("Players").LocalPlayer
+local Gui = Instance.new("ScreenGui")
+Gui.Name = "DNggHubUI"
+Gui.ResetOnSpawn = false
+Gui.Parent = Player:WaitForChild("PlayerGui")
+
+local TabsFrame = Instance.new("Frame")
+TabsFrame.Size = UDim2.new(1, 0, 0, 30)
+TabsFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+TabsFrame.Parent = Gui
+
+local ContentFrame = Instance.new("Frame")
+ContentFrame.Size = UDim2.new(1, 0, 1, -30)
+ContentFrame.Position = UDim2.new(0, 0, 0, 30)
+ContentFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 35)
+ContentFrame.Parent = Gui
+
+local Elements = {}
+local Tabs = {}
+local ActiveTab
+
+local function ClearContent()
+	for _, v in ipairs(ContentFrame:GetChildren()) do
+		if v:IsA("Frame") then v.Visible = false end
+	end
+end
+
+function UI:CreateTab(name)
+	local TabButton = Instance.new("TextButton")
+	TabButton.Size = UDim2.new(0, 100, 1, 0)
+	TabButton.BackgroundColor3 = Color3.fromRGB(45, 45, 70)
+	TabButton.Text = name
+	TabButton.TextColor3 = Color3.new(1,1,1)
+	TabButton.Parent = TabsFrame
+
+	local TabFrame = Instance.new("Frame")
+	TabFrame.Visible = false
+	TabFrame.Size = UDim2.new(1, -10, 1, -10)
+	TabFrame.Position = UDim2.new(0, 5, 0, 5)
+	TabFrame.BackgroundTransparency = 1
+	TabFrame.Parent = ContentFrame
+
+	Tabs[name] = TabFrame
+	TabButton.MouseButton1Click:Connect(function()
+		ClearContent()
+		TabFrame.Visible = true
+		ActiveTab = TabFrame
+	end)
+
+	local API = {}
+
+	function API:AddToggle(text, default, desc, callback)
+		local f = Instance.new("Frame")
+		f.Size = UDim2.new(1, 0, 0, 25)
+		f.BackgroundTransparency = 1
+		f.Parent = TabFrame
+
+		local lbl = Instance.new("TextLabel")
+		lbl.Size = UDim2.new(0.6, 0, 1, 0)
+		lbl.Text = text
+		lbl.TextColor3 = Color3.new(1,1,1)
+		lbl.BackgroundTransparency = 1
+		lbl.Parent = f
+
+		local btn = Instance.new("TextButton")
+		btn.Size = UDim2.new(0.3, 0, 1, 0)
+		btn.Position = UDim2.new(0.65, 0, 0, 0)
+		btn.Text = default and "ON" or "OFF"
+		btn.BackgroundColor3 = default and Color3.fromRGB(0,170,0) or Color3.fromRGB(150,0,0)
+		btn.TextColor3 = Color3.new(1,1,1)
+		btn.Parent = f
+
+		local state = default
+		btn.MouseButton1Click:Connect(function()
+			state = not state
+			btn.Text = state and "ON" or "OFF"
+			btn.BackgroundColor3 = state and Color3.fromRGB(0,170,0) or Color3.fromRGB(150,0,0)
+			callback(state)
+		end)
+
+		Elements[text] = {Type="Toggle", Btn=btn, State=state}
+	end
+
+	function API:AddButton(text, desc, callback)
+		local btn = Instance.new("TextButton")
+		btn.Size = UDim2.new(1, 0, 0, 25)
+		btn.Text = text
+		btn.TextColor3 = Color3.new(1,1,1)
+		btn.BackgroundColor3 = Color3.fromRGB(45,45,70)
+		btn.Parent = TabFrame
+		btn.MouseButton1Click:Connect(callback)
+		Elements[text] = {Type="Button", Btn=btn}
+	end
+
+	function API:AddTextbox(text, placeholder, desc, callback)
+		local f = Instance.new("Frame")
+		f.Size = UDim2.new(1, 0, 0, 25)
+		f.BackgroundTransparency = 1
+		f.Parent = TabFrame
+
+		local lbl = Instance.new("TextLabel")
+		lbl.Size = UDim2.new(0.4, 0, 1, 0)
+		lbl.Text = text
+		lbl.TextColor3 = Color3.new(1,1,1)
+		lbl.BackgroundTransparency = 1
+		lbl.Parent = f
+
+		local box = Instance.new("TextBox")
+		box.Size = UDim2.new(0.55, 0, 1, 0)
+		box.Position = UDim2.new(0.45, 0, 0, 0)
+		box.PlaceholderText = placeholder
+		box.Text = ""
+		box.BackgroundColor3 = Color3.fromRGB(35,35,55)
+		box.TextColor3 = Color3.new(1,1,1)
+		box.Parent = f
+		box.FocusLost:Connect(function() callback(box.Text) end)
+		Elements[text] = {Type="Textbox", Box=box}
+	end
+
+	function API:AddSlider(text, default, min, max, desc, callback)
+		local f = Instance.new("Frame")
+		f.Size = UDim2.new(1, 0, 0, 25)
+		f.BackgroundTransparency = 1
+		f.Parent = TabFrame
+
+		local lbl = Instance.new("TextLabel")
+		lbl.Size = UDim2.new(0.5, 0, 1, 0)
+		lbl.Text = text..": "..default
+		lbl.TextColor3 = Color3.new(1,1,1)
+		lbl.BackgroundTransparency = 1
+		lbl.Parent = f
+
+		local slider = Instance.new("TextButton")
+		slider.Size = UDim2.new(0.4, 0, 1, 0)
+		slider.Position = UDim2.new(0.55, 0, 0, 0)
+		slider.BackgroundColor3 = Color3.fromRGB(50,50,80)
+		slider.Text = ""
+		slider.Parent = f
+
+		local fill = Instance.new("Frame")
+		fill.Size = UDim2.new((default-min)/(max-min), 0, 1, 0)
+		fill.BackgroundColor3 = Color3.fromRGB(0,170,255)
+		fill.Parent = slider
+
+		local dragging = false
+		local val = default
+		slider.InputBegan:Connect(function(i)
+			if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then dragging = true end
+		end)
+		slider.InputEnded:Connect(function(i)
+			if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then dragging = false end
+		end)
+		game:GetService("UserInputService").InputChanged:Connect(function(i)
+			if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+				local pos = math.clamp((i.Position.X - slider.AbsolutePosition.X) / slider.AbsoluteSize.X, 0, 1)
+				fill.Size = UDim2.new(pos,0,1,0)
+				val = math.floor(min + (max-min)*pos)
+				lbl.Text = text..": "..val
+				callback(val)
+			end
+		end)
+		Elements[text] = {Type="Slider", Fill=fill, Label=lbl, Value=val, Min=min, Max=max}
+	end
+
+	return API
+end
+
+function UI:Change(name, property, value)
+	local e = Elements[name]
+	if not e then return end
+	if e.Type == "Toggle" and property == "State" then
+		e.State = value
+		e.Btn.Text = value and "ON" or "OFF"
+		e.Btn.BackgroundColor3 = value and Color3.fromRGB(0,170,0) or Color3.fromRGB(150,0,0)
+	elseif e.Type == "Slider" and property == "Value" then
+		local pos = math.clamp((value - e.Min)/(e.Max - e.Min), 0, 1)
+		e.Fill.Size = UDim2.new(pos,0,1,0)
+		e.Label.Text = name..": "..value
+	elseif e.Type == "Textbox" and property == "Text" then
+		e.Box.Text = tostring(value)
+	elseif e.Type == "Button" and property == "Visible" then
+		e.Btn.Visible = value
+	end
+end
+
+return UI
