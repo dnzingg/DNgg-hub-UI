@@ -1,219 +1,404 @@
+-- ui.lua - DNgg Hub UI (final, compact, mobile-friendly, auto-save)
 return function(config)
-	config = config or {}
-	local Name = config.Name or "DNgg Hub"
-	local Accent = config.AccentColor or Color3.fromRGB(0,170,255)
+    config = config or {}
+    local Name = config.Name or "DNgg Hub"
+    local Accent = config.AccentColor or Color3.fromRGB(0,130,200) -- default dark blue accent
+    local ConfigName = config.ConfigName or (Name:gsub("%s+","") .. "_config.json")
 
-	local P = game:GetService("Players").LocalPlayer
-	local Gui = Instance.new("ScreenGui", P:WaitForChild("PlayerGui"))
-	Gui.Name = Name:gsub(" ","").."_UI"
-	Gui.ResetOnSpawn = false
+    local Players = game:GetService("Players")
+    local UIS = game:GetService("UserInputService")
+    local RunService = game:GetService("RunService")
+    local TweenService = game:GetService("TweenService")
+    local LocalPlayer = Players.LocalPlayer
 
-	local Main = Instance.new("Frame", Gui)
-	Main.Size = UDim2.new(0,310,0,260)
-	Main.Position = UDim2.new(0.35,0,0.35,0)
-	Main.BackgroundColor3 = Color3.fromRGB(25,25,35)
-	Main.BorderSizePixel = 0
-	Main.Active = true
-	Main.Draggable = true
+    -- file API detection
+    local canWrite = (type(writefile) == "function" and type(readfile) == "function" and type(isfile) == "function")
 
-	local Top = Instance.new("Frame", Main)
-	Top.Size = UDim2.new(1,0,0,30)
-	Top.BackgroundColor3 = Accent
-	Top.BorderSizePixel = 0
+    -- basic helpers
+    local function clamp(v, a, b) return math.max(a, math.min(b, v)) end
+    local function safeCall(f, ...) local ok, res = pcall(f, ...) if not ok then return nil end return res end
 
-	local Title = Instance.new("TextLabel", Top)
-	Title.Size = UDim2.new(1,-60,1,0)
-	Title.Position = UDim2.new(0,10,0,0)
-	Title.BackgroundTransparency = 1
-	Title.Text = Name
-	Title.TextColor3 = Color3.new(1,1,1)
-	Title.TextXAlignment = Enum.TextXAlignment.Left
-	Title.Font = Enum.Font.SourceSansBold
-	Title.TextSize = 16
+    -- load saved config
+    local saved = {}
+    if canWrite and isfile(ConfigName) then
+        local ok, content = pcall(readfile, ConfigName)
+        if ok and content then
+            local suc, tbl = pcall(function() return game:GetService("HttpService"):JSONDecode(content) end)
+            if suc and type(tbl) == "table" then saved = tbl end
+        end
+    end
 
-	local MinBtn = Instance.new("TextButton", Top)
-	MinBtn.Size = UDim2.new(0,25,1,0)
-	MinBtn.Position = UDim2.new(1,-50,0,0)
-	MinBtn.Text = "-"
-	MinBtn.BackgroundColor3 = Color3.fromRGB(40,40,50)
-	MinBtn.TextColor3 = Color3.new(1,1,1)
-	MinBtn.Font = Enum.Font.SourceSansBold
-	MinBtn.TextSize = 18
+    -- create ScreenGui
+    local screen = Instance.new("ScreenGui")
+    screen.Name = Name:gsub("%s+","").."_UI"
+    screen.ResetOnSpawn = false
+    screen.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
-	local CloseBtn = Instance.new("TextButton", Top)
-	CloseBtn.Size = UDim2.new(0,25,1,0)
-	CloseBtn.Position = UDim2.new(1,-25,0,0)
-	CloseBtn.Text = "X"
-	CloseBtn.BackgroundColor3 = Color3.fromRGB(150,40,40)
-	CloseBtn.TextColor3 = Color3.new(1,1,1)
-	CloseBtn.Font = Enum.Font.SourceSansBold
-	CloseBtn.TextSize = 16
+    -- main frame (rounded + shadow simulated with border)
+    local main = Instance.new("Frame", screen)
+    main.Size = UDim2.new(0, 420, 0, 340)
+    main.Position = UDim2.new(0.28, 0, 0.18, 0)
+    main.BackgroundColor3 = Color3.fromRGB(16,20,30)
+    main.BorderSizePixel = 0
+    main.ClipsDescendants = true
 
-	local TabBar = Instance.new("Frame", Main)
-	TabBar.Size = UDim2.new(1,0,0,25)
-	TabBar.Position = UDim2.new(0,0,0,30)
-	TabBar.BackgroundColor3 = Color3.fromRGB(35,35,50)
+    -- corner
+    local uicorner = Instance.new("UICorner", main)
+    uicorner.CornerRadius = UDim.new(0, 10)
 
-	local Content = Instance.new("Frame", Main)
-	Content.Size = UDim2.new(1,-10,1,-65)
-	Content.Position = UDim2.new(0,5,0,60)
-	Content.BackgroundTransparency = 1
-	Content.ClipsDescendants = true
+    -- top bar
+    local top = Instance.new("Frame", main)
+    top.Size = UDim2.new(1, 0, 0, 36)
+    top.Position = UDim2.new(0, 0, 0, 0)
+    top.BackgroundColor3 = Color3.fromRGB(10,14,24)
+    top.BorderSizePixel = 0
+    local topCorner = Instance.new("UICorner", top); topCorner.CornerRadius = UDim.new(0,10)
 
-	local UIList = Instance.new("UIListLayout", Content)
-	UIList.Padding = UDim.new(0,4)
-	UIList.SortOrder = Enum.SortOrder.LayoutOrder
+    local title = Instance.new("TextLabel", top)
+    title.Size = UDim2.new(1, -110, 1, 0)
+    title.Position = UDim2.new(0, 12, 0, 0)
+    title.BackgroundTransparency = 1
+    title.Text = Name
+    title.TextColor3 = Color3.fromRGB(230,235,245)
+    title.Font = Enum.Font.SourceSansBold
+    title.TextSize = 16
+    title.TextXAlignment = Enum.TextXAlignment.Left
 
-	local Tabs, ActiveTab, Elements = {}, nil, {}
+    local minBtn = Instance.new("TextButton", top)
+    minBtn.Size = UDim2.new(0, 36, 0, 24)
+    minBtn.Position = UDim2.new(1, -92, 0, 6)
+    minBtn.Text = "—"
+    minBtn.Font = Enum.Font.SourceSansBold
+    minBtn.TextSize = 18
+    minBtn.BackgroundColor3 = Color3.fromRGB(24,32,48)
+    minBtn.TextColor3 = Color3.fromRGB(240,240,240)
+    local closeBtn = Instance.new("TextButton", top)
+    closeBtn.Size = UDim2.new(0, 36, 0, 24)
+    closeBtn.Position = UDim2.new(1, -48, 0, 6)
+    closeBtn.Text = "X"
+    closeBtn.Font = Enum.Font.SourceSansBold
+    closeBtn.TextSize = 14
+    closeBtn.BackgroundColor3 = Color3.fromRGB(150,40,40)
+    closeBtn.TextColor3 = Color3.fromRGB(255,255,255)
 
-	local function switchTab(tab)
-		for _,t in pairs(Tabs) do t.frame.Visible = false end
-		tab.frame.Visible = true
-		ActiveTab = tab
-	end
+    -- tabs row (top)
+    local tabsRow = Instance.new("Frame", main)
+    tabsRow.Size = UDim2.new(1, -24, 0, 40)
+    tabsRow.Position = UDim2.new(0, 12, 0, 46)
+    tabsRow.BackgroundTransparency = 1
+    local tabsLayout = Instance.new("UIListLayout", tabsRow)
+    tabsLayout.FillDirection = Enum.FillDirection.Horizontal
+    tabsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    tabsLayout.Padding = UDim.new(0, 8)
 
-	local UI = {}
+    -- content area
+    local content = Instance.new("Frame", main)
+    content.Size = UDim2.new(1, -24, 1, -110)
+    content.Position = UDim2.new(0, 12, 0, 92)
+    content.BackgroundTransparency = 1
+    content.ClipsDescendants = true
+    local contentLayout = Instance.new("UIListLayout", content)
+    contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    contentLayout.Padding = UDim.new(0, 6)
 
-	function UI:CreateTab(name)
-		local btn = Instance.new("TextButton", TabBar)
-		btn.Size = UDim2.new(0,100,1,0)
-		btn.Text = name
-		btn.BackgroundColor3 = Color3.fromRGB(45,45,65)
-		btn.TextColor3 = Color3.new(1,1,1)
-		btn.Font = Enum.Font.SourceSans
-		btn.TextSize = 14
+    -- tooltip (floating)
+    local tooltip = Instance.new("TextLabel", screen)
+    tooltip.Size = UDim2.new(0, 260, 0, 28)
+    tooltip.BackgroundColor3 = Color3.fromRGB(20,28,44)
+    tooltip.TextColor3 = Color3.fromRGB(230,240,255)
+    tooltip.Font = Enum.Font.SourceSans
+    tooltip.TextSize = 13
+    tooltip.Visible = false
+    local tooltipCorner = Instance.new("UICorner", tooltip); tooltipCorner.CornerRadius = UDim.new(0,6)
 
-		local frame = Instance.new("Frame", Content)
-		frame.Size = UDim2.new(1,0,1,0)
-		frame.Visible = false
-		local layout = Instance.new("UIListLayout", frame)
-		layout.Padding = UDim.new(0,4)
+    UIS.InputChanged:Connect(function(inp)
+        if tooltip.Visible and inp.UserInputType == Enum.UserInputType.MouseMovement then
+            local p = inp.Position
+            tooltip.Position = UDim2.new(0, clamp(p.X + 12, 6, workspace.CurrentCamera.ViewportSize.X - 270), 0, clamp(p.Y + 12, 6, workspace.CurrentCamera.ViewportSize.Y - 40))
+        end
+    end)
 
-		local tab = {frame=frame,name=name}
-		Tabs[#Tabs+1] = tab
-		btn.MouseButton1Click:Connect(function() switchTab(tab) end)
-		if not ActiveTab then switchTab(tab) end
+    -- drag by top (supports touch)
+    do
+        local dragging, dragInput, dragStart, startPos = false, nil, nil, nil
+        local function update(input)
+            local delta = input.Position - dragStart
+            main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+        top.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = true
+                dragStart = input.Position
+                startPos = main.Position
+                dragInput = input
+                input.Changed:Connect(function()
+                    if input.UserInputState == Enum.UserInputState.End then dragging = false end
+                end)
+            end
+        end)
+        top.InputChanged:Connect(function(input)
+            if dragging and input == dragInput then update(input) end
+        end)
+    end
 
-		function tab:AddLabel(text)
-			local l = Instance.new("TextLabel", frame)
-			l.Size = UDim2.new(1,0,0,20)
-			l.BackgroundTransparency = 1
-			l.Text = text
-			l.TextColor3 = Color3.new(1,1,1)
-			l.Font = Enum.Font.SourceSans
-			l.TextSize = 14
-		end
+    -- UI data structures
+    local UI = {}
+    UI.Tabs = {}
+    UI.Elements = {} -- name -> {type, widgets, set, get, desc}
 
-		function tab:AddToggle(name, state, desc, callback)
-			local f = Instance.new("Frame", frame)
-			f.Size = UDim2.new(1,0,0,25)
-			f.BackgroundTransparency = 1
-			local lbl = Instance.new("TextLabel", f)
-			lbl.Size = UDim2.new(0.7,0,1,0)
-			lbl.BackgroundTransparency = 1
-			lbl.Text = name
-			lbl.TextColor3 = Color3.new(1,1,1)
-			lbl.TextXAlignment = Enum.TextXAlignment.Left
-			lbl.Font = Enum.Font.SourceSans
-			lbl.TextSize = 14
+    -- save/load helpers
+    local function persistSave()
+        if not canWrite then return end
+        local out = {}
+        for name, e in pairs(UI.Elements) do
+            if e.type == "toggle" then out[name] = {type="toggle", value = e.get()} end
+            if e.type == "textbox" then out[name] = {type="textbox", value = e.get()} end
+            if e.type == "slider" then out[name] = {type="slider", value = e.get(), min = e.min, max = e.max} end
+        end
+        pcall(function()
+            writefile(ConfigName, game:GetService("HttpService"):JSONEncode(out))
+        end)
+    end
+    local function persistLoad()
+        if not canWrite then return {} end
+        if not isfile(ConfigName) then return {} end
+        local ok, content = pcall(readfile, ConfigName)
+        if not ok or not content then return {} end
+        local suc, tbl = pcall(function() return game:GetService("HttpService"):JSONDecode(content) end)
+        if suc and type(tbl) == "table" then return tbl end
+        return {}
+    end
 
-			local b = Instance.new("TextButton", f)
-			b.Size = UDim2.new(0.25,0,1,0)
-			b.Position = UDim2.new(0.75,0,0,0)
-			b.BackgroundColor3 = state and Accent or Color3.fromRGB(70,70,70)
-			b.Text = state and "ON" or "OFF"
-			b.TextColor3 = Color3.new(1,1,1)
-			b.Font = Enum.Font.SourceSansBold
-			b.TextSize = 14
-			b.MouseButton1Click:Connect(function()
-				state = not state
-				b.BackgroundColor3 = state and Accent or Color3.fromRGB(70,70,70)
-				b.Text = state and "ON" or "OFF"
-				pcall(callback,state)
-			end)
-			Elements[name] = {type="toggle",obj=b,set=function(v)
-				state=v
-				b.BackgroundColor3 = v and Accent or Color3.fromRGB(70,70,70)
-				b.Text = v and "ON" or "OFF"
-			end}
-		end
+    local loadedConfig = persistLoad()
+    -- when element changes, call persistSave (debounced small)
+    local saveScheduled = false
+    local function scheduleSave()
+        if not canWrite then return end
+        if saveScheduled then return end
+        saveScheduled = true
+        task.defer(function()
+            task.wait(0.15)
+            persistSave()
+            saveScheduled = false
+        end)
+    end
 
-		function tab:AddButton(name, desc, callback)
-			local b = Instance.new("TextButton", frame)
-			b.Size = UDim2.new(1,0,0,25)
-			b.Text = name
-			b.BackgroundColor3 = Accent
-			b.TextColor3 = Color3.new(1,1,1)
-			b.Font = Enum.Font.SourceSansBold
-			b.TextSize = 14
-			b.MouseButton1Click:Connect(function() pcall(callback) end)
-			Elements[name] = {type="button",obj=b}
-		end
+    -- attach tooltip behavior (hover & touch hold)
+    local function attachTooltip(obj, desc)
+        if not desc then return end
+        obj.MouseEnter:Connect(function()
+            local pos = UIS:GetMouseLocation()
+            tooltip.Text = desc
+            tooltip.Position = UDim2.new(0, clamp(pos.X + 12, 6, workspace.CurrentCamera.ViewportSize.X - 270), 0, clamp(pos.Y + 12, 6, workspace.CurrentCamera.ViewportSize.Y - 40))
+            tooltip.BackgroundTransparency = 1
+            tooltip.Visible = true
+            TweenService:Create(tooltip, TweenInfo.new(0.12), {BackgroundTransparency = 0}):Play()
+        end)
+        obj.MouseLeave:Connect(function()
+            TweenService:Create(tooltip, TweenInfo.new(0.1), {BackgroundTransparency = 1}):Play()
+            task.delay(0.11, function() tooltip.Visible = false end)
+        end)
+        -- touch hold
+        obj.InputBegan:Connect(function(inp)
+            if inp.UserInputType == Enum.UserInputType.Touch then
+                local held = true
+                task.spawn(function()
+                    task.wait(0.45)
+                    if held then
+                        local pos = inp.Position or UIS:GetMouseLocation()
+                        tooltip.Text = desc
+                        tooltip.Position = UDim2.new(0, clamp(pos.X + 12, 6, workspace.CurrentCamera.ViewportSize.X - 270), 0, clamp(pos.Y + 12, 6, workspace.CurrentCamera.ViewportSize.Y - 40))
+                        tooltip.BackgroundTransparency = 0
+                        tooltip.Visible = true
+                    end
+                end)
+                inp.Changed:Connect(function()
+                    if inp.UserInputState == Enum.UserInputState.End then
+                        held = false
+                        tooltip.Visible = false
+                    end
+                end)
+            end
+        end)
+    end
 
-		function tab:AddTextbox(name, default, desc, callback)
-			local f = Instance.new("Frame", frame)
-			f.Size = UDim2.new(1,0,0,25)
-			f.BackgroundTransparency = 1
-			local lbl = Instance.new("TextLabel", f)
-			lbl.Size = UDim2.new(0.5,0,1,0)
-			lbl.BackgroundTransparency = 1
-			lbl.Text = name
-			lbl.TextColor3 = Color3.new(1,1,1)
-			lbl.TextXAlignment = Enum.TextXAlignment.Left
-			lbl.Font = Enum.Font.SourceSans
-			lbl.TextSize = 14
-			local box = Instance.new("TextBox", f)
-			box.Size = UDim2.new(0.45,0,1,0)
-			box.Position = UDim2.new(0.55,0,0,0)
-			box.Text = tostring(default or "")
-			box.BackgroundColor3 = Color3.fromRGB(40,40,55)
-			box.TextColor3 = Color3.new(1,1,1)
-			box.Font = Enum.Font.SourceSans
-			box.TextSize = 14
-			box.FocusLost:Connect(function() pcall(callback, box.Text) end)
-			Elements[name] = {type="textbox",obj=box,set=function(v) box.Text=tostring(v) end}
-		end
+    -- create tab
+    function UI:CreateTab(tabName)
+        local btn = Instance.new("TextButton", tabsRow)
+        btn.Size = UDim2.new(0, 120, 0, 32)
+        btn.BackgroundColor3 = Color3.fromRGB(22,28,40)
+        btn.Text = tabName
+        btn.Font = Enum.Font.SourceSansBold
+        btn.TextSize = 14
+        btn.TextColor3 = Color3.fromRGB(220,225,235)
+        local btnCorner = Instance.new("UICorner", btn); btnCorner.CornerRadius = UDim.new(0,6)
 
-		function tab:AddSlider(name, default, min, max, desc, callback)
-			local f = Instance.new("Frame", frame)
-			f.Size = UDim2.new(1,0,0,25)
-			f.BackgroundTransparency = 1
-			local lbl = Instance.new("TextLabel", f)
-			lbl.Size = UDim2.new(0.5,0,1,0)
-			lbl.BackgroundTransparency = 1
-			lbl.Text = name
-			lbl.TextColor3 = Color3.new(1,1,1)
-			lbl.TextXAlignment = Enum.TextXAlignment.Left
-			lbl.Font = Enum.Font.SourceSans
-			lbl.TextSize = 14
-			local slide = Instance.new("TextBox", f)
-			slide.Size = UDim2.new(0.45,0,1,0)
-			slide.Position = UDim2.new(0.55,0,0,0)
-			slide.BackgroundColor3 = Color3.fromRGB(40,40,55)
-			slide.TextColor3 = Color3.new(1,1,1)
-			slide.Font = Enum.Font.SourceSans
-			slide.TextSize = 14
-			slide.Text = tostring(default or min)
-			slide.FocusLost:Connect(function()
-				local val = tonumber(slide.Text)
-				if val then val = math.clamp(val,min,max) slide.Text=tostring(val) pcall(callback,val) end
-			end)
-			Elements[name]={type="slider",obj=slide,set=function(v) slide.Text=tostring(v) end}
-		end
+        local tabFrame = Instance.new("Frame", content)
+        tabFrame.Size = UDim2.new(1,0,1,0)
+        tabFrame.BackgroundTransparency = 1
+        tabFrame.Visible = false
+        local layout = Instance.new("UIListLayout", tabFrame)
+        layout.Padding = UDim.new(0,6)
 
-		return tab
-	end
+        local tab = {name = tabName, btn = btn, frame = tabFrame}
+        UI.Tabs[tabName] = tab
 
-	function UI:Change(name,value)
-		local el = Elements[name]
-		if el and el.set then el.set(value) end
-	end
+        btn.MouseButton1Click:Connect(function()
+            for k,v in pairs(UI.Tabs) do
+                v.btn.BackgroundColor3 = Color3.fromRGB(22,28,40)
+                v.frame.Visible = false
+            end
+            btn.BackgroundColor3 = Accent
+            tabFrame.Visible = true
+        end)
 
-	MinBtn.MouseButton1Click:Connect(function()
-		Content.Visible = not Content.Visible
-		Main.Size = Content.Visible and UDim2.new(0,310,0,260) or UDim2.new(0,310,0,55)
-	end)
-	CloseBtn.MouseButton1Click:Connect(function() Gui:Destroy() end)
+        -- auto-select first tab
+        if not UI._selected then
+            UI._selected = tab
+            btn.BackgroundColor3 = Accent
+            tabFrame.Visible = true
+        end
 
-	return UI
+        -- tab API
+        function tab:AddToggle(name, default, desc, callback)
+            local f = Instance.new("Frame", tabFrame); f.Size = UDim2.new(1,0,0,28); f.BackgroundTransparency = 1
+            local lbl = Instance.new("TextLabel", f); lbl.Size = UDim2.new(0.68,0,1,0); lbl.BackgroundTransparency = 1; lbl.Text = name; lbl.TextXAlignment = Enum.TextXAlignment.Left; lbl.Font=Enum.Font.SourceSans; lbl.TextSize=14; lbl.TextColor3=Color3.fromRGB(230,235,245)
+            local btn = Instance.new("TextButton", f); btn.Size = UDim2.new(0.28,0,0.86,0); btn.Position = UDim2.new(0.7,0,0.07,0); btn.Font=Enum.Font.SourceSansBold; btn.TextSize=14; btn.TextColor3=Color3.new(1,1,1)
+            local state = saved[name] and saved[name].value or (default and true or false)
+            btn.BackgroundColor3 = state and Accent or Color3.fromRGB(60,68,82)
+            btn.Text = state and "ON" or "OFF"
+            attachTooltip(f, desc)
+            btn.MouseButton1Click:Connect(function()
+                state = not state
+                btn.BackgroundColor3 = state and Accent or Color3.fromRGB(60,68,82)
+                btn.Text = state and "ON" or "OFF"
+                pcall(callback, state)
+                UI.Elements[name].value = state
+                scheduleSave()
+            end)
+            UI.Elements[name] = {type="toggle", widgets={root=f,label=lbl,button=btn}, get=function() return state end, set=function(v) state=not not v btn.BackgroundColor3 = state and Accent or Color3.fromRGB(60,68,82) btn.Text = state and "ON" or "OFF" end, desc = desc}
+            -- apply saved if exists
+            if saved[name] and type(saved[name].value) == "boolean" then UI.Elements[name].set(saved[name].value) end
+            return UI.Elements[name]
+        end
+
+        function tab:AddButton(name, desc, callback)
+            local b = Instance.new("TextButton", tabFrame); b.Size = UDim2.new(1,0,0,32); b.BackgroundColor3 = Accent; b.Font=Enum.Font.SourceSansBold; b.TextSize=14; b.TextColor3=Color3.new(1,1,1); b.Text = name
+            attachTooltip(b, desc)
+            b.MouseButton1Click:Connect(function() pcall(callback) end)
+            UI.Elements[name] = {type="button", widgets={button=b}, desc=desc}
+            return UI.Elements[name]
+        end
+
+        function tab:AddTextbox(name, default, desc, callback)
+            local f = Instance.new("Frame", tabFrame); f.Size = UDim2.new(1,0,0,30); f.BackgroundTransparency = 1
+            local lbl = Instance.new("TextLabel", f); lbl.Size = UDim2.new(0.46,0,1,0); lbl.BackgroundTransparency = 1; lbl.Text = name; lbl.TextXAlignment=Enum.TextXAlignment.Left; lbl.Font=Enum.Font.SourceSans; lbl.TextSize=14; lbl.TextColor3=Color3.fromRGB(230,235,245)
+            local box = Instance.new("TextBox", f); box.Size = UDim2.new(0.52,0,1,0); box.Position = UDim2.new(0.48,0,0,0); box.BackgroundColor3 = Color3.fromRGB(30,34,42); box.TextColor3 = Color3.fromRGB(235,240,245); box.Font=Enum.Font.SourceSans; box.TextSize=14
+            local initial = saved[name] and saved[name].value or tostring(default or "")
+            box.Text = initial
+            attachTooltip(f, desc)
+            box.FocusLost:Connect(function() pcall(callback, box.Text) UI.Elements[name].value = box.Text scheduleSave() end)
+            UI.Elements[name] = {type="textbox", widgets={root=f,label=lbl,box=box}, get=function() return box.Text end, set=function(v) box.Text = tostring(v) end, desc=desc, value = box.Text}
+            if saved[name] and saved[name].value then UI.Elements[name].set(saved[name].value) end
+            return UI.Elements[name]
+        end
+
+        function tab:AddSlider(name, default, min, max, desc, callback)
+            min = tonumber(min) or 0
+            max = tonumber(max) or 100
+            default = tonumber(default) or min
+            if max <= min then max = min + 1 end
+            local f = Instance.new("Frame", tabFrame); f.Size = UDim2.new(1,0,0,40); f.BackgroundTransparency = 1
+            local lbl = Instance.new("TextLabel", f); lbl.Size = UDim2.new(1,0,0,16); lbl.BackgroundTransparency = 1; lbl.Text = name.." ["..tostring(default).."]"; lbl.TextXAlignment=Enum.TextXAlignment.Left; lbl.Font=Enum.Font.SourceSans; lbl.TextSize=13; lbl.TextColor3=Color3.fromRGB(230,235,245)
+            local bar = Instance.new("Frame", f); bar.Size = UDim2.new(1,-12,0,12); bar.Position = UDim2.new(0,6,0,22); bar.BackgroundColor3 = Color3.fromRGB(28,36,48); bar.BorderSizePixel = 0; local barCorner = Instance.new("UICorner", bar); barCorner.CornerRadius = UDim.new(0,6)
+            local fill = Instance.new("Frame", bar); fill.Size = UDim2.new( (default-min)/(max-min), 0, 1, 0 ); fill.BackgroundColor3 = Accent; local fillCorner = Instance.new("UICorner", fill); fillCorner.CornerRadius = UDim.new(0,6)
+            local knob = Instance.new("Frame", bar); knob.Size = UDim2.new(0, 14, 0, 14); knob.AnchorPoint = Vector2.new(0.5,0.5); knob.Position = UDim2.new((default-min)/(max-min),0,0.5,0); knob.BackgroundColor3 = Color3.fromRGB(235,235,235); knob.BorderSizePixel = 0; knob.ZIndex = bar.ZIndex + 1; local knobCorner = Instance.new("UICorner", knob); knobCorner.CornerRadius = UDim.new(0,8)
+
+            attachTooltip(f, desc)
+
+            local dragging, curInput = false, nil
+            local function setByX(x)
+                local localX = x - bar.AbsolutePosition.X
+                local W = bar.AbsoluteSize.X
+                if W <= 0 then return end
+                local pct = clamp(localX / W, 0, 1)
+                fill.Size = UDim2.new(pct,0,1,0)
+                knob.Position = UDim2.new(pct,0,0.5,0)
+                local val = math.floor(min + (max-min)*pct)
+                lbl.Text = name.." ["..tostring(val).."]"
+                UI.Elements[name].value = val
+                pcall(callback, val)
+            end
+
+            bar.InputBegan:Connect(function(i)
+                if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+                    dragging = true; curInput = i
+                    setByX(i.Position.X)
+                end
+            end)
+            knob.InputBegan:Connect(function(i)
+                if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+                    dragging = true; curInput = i
+                    setByX(i.Position.X)
+                end
+            end)
+            UIS.InputChanged:Connect(function(i)
+                if not dragging then return end
+                if i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch then
+                    setByX(i.Position.X)
+                end
+            end)
+            UIS.InputEnded:Connect(function(i) if dragging and (i == curInput or i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch) then dragging = false; curInput = nil; scheduleSave() end end)
+
+            local initial = saved[name] and saved[name].value or default
+            local pct = clamp((initial - min)/(max-min), 0, 1)
+            fill.Size = UDim2.new(pct,0,1,0); knob.Position = UDim2.new(pct,0,0.5,0); lbl.Text = name.." ["..tostring(initial).."]"
+            UI.Elements[name] = {type="slider", widgets={root=f,label=lbl,bar=bar,fill=fill,knob=knob}, get=function() return UI.Elements[name].value end, set=function(v) local pct=clamp((v-min)/(max-min),0,1) fill.Size=UDim2.new(pct,0,1,0); knob.Position=UDim2.new(pct,0,0.5,0); lbl.Text = name.." ["..tostring(math.floor(v)).."]"; UI.Elements[name].value = v end, min=min, max=max, value=initial}
+            return UI.Elements[name]
+        end
+
+        return tab
+    end
+
+    -- UI.Change(name, property_or_value)
+    function UI:Change(name, prop, val)
+        local e = UI.Elements[name]
+        if not e then return false, "not found" end
+        if e.type == "toggle" then
+            if prop == nil or prop == "State" then e.set(not not val); scheduleSave(); return true end
+            if prop == "Label" and e.widgets and e.widgets.label then e.widgets.label.Text = tostring(val); return true end
+        elseif e.type == "textbox" then
+            if prop == nil or prop == "Text" then e.set(val); scheduleSave(); return true end
+        elseif e.type == "slider" then
+            if prop == nil or prop == "Value" then e.set(tonumber(val) or e.min); scheduleSave(); return true end
+        elseif e.type == "button" then
+            if prop == "Visible" then e.widgets.button.Visible = not not val; return true end
+            if prop == "Text" then e.widgets.button.Text = tostring(val); return true end
+        end
+        return false, "unsupported"
+    end
+
+    -- minimize & close
+    local contentVisible = true
+    minBtn.MouseButton1Click:Connect(function()
+        contentVisible = not contentVisible
+        for _,v in pairs(UI.Tabs) do v.frame.Visible = contentVisible and (v == UI._selected) end
+        content.Visible = contentVisible
+        if contentVisible then main.Size = UDim2.new(0,420,0,340) else main.Size = UDim2.new(0,420,0,56) end
+    end)
+    closeBtn.MouseButton1Click:Connect(function() pcall(function() screen:Destroy() end) end)
+
+    -- apply saved values for elements that load later: schedule after small wait
+    task.defer(function()
+        -- loadedConfig was already used when creating elements; this ensures any leftover saved values apply if created later
+        for name, data in pairs(loadedConfig) do
+            if UI.Elements[name] and data and data.value ~= nil then
+                local e = UI.Elements[name]
+                if e.set then e.set(data.value) end
+            end
+        end
+    end)
+
+    -- final return
+    return UI
 end
