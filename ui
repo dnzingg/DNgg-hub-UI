@@ -307,6 +307,93 @@ return function(config)
         return tab
     end
 
+function tab:AddSlider(name,default,min,max,desc,callback)
+    local f = Instance.new("Frame", tabFrame)
+    f.Size = UDim2.new(1,0,0,36)
+    f.BackgroundTransparency = 1
+
+    local lbl = Instance.new("TextLabel", f)
+    lbl.Size = UDim2.new(0.4,0,1,0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = name
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Font = Enum.Font.SourceSans
+    lbl.TextSize = 14
+    lbl.TextColor3 = Color3.fromRGB(230,235,245)
+
+    local sliderFrame = Instance.new("Frame", f)
+    sliderFrame.Size = UDim2.new(0.58,0,0.4,0)
+    sliderFrame.Position = UDim2.new(0.42,0,0.3,0)
+    sliderFrame.BackgroundColor3 = Color3.fromRGB(40,45,55)
+    sliderFrame.ClipsDescendants = true
+    local sliderCorner = Instance.new("UICorner", sliderFrame)
+    sliderCorner.CornerRadius = UDim.new(0,6)
+
+    local fill = Instance.new("Frame", sliderFrame)
+    fill.Size = UDim2.new(0,0,1,0)
+    fill.BackgroundColor3 = Color3.fromRGB(0,150,255)
+    local fillCorner = Instance.new("UICorner", fill)
+    fillCorner.CornerRadius = UDim.new(0,6)
+
+    local valueLabel = Instance.new("TextLabel", f)
+    valueLabel.Size = UDim2.new(0.15,0,1,0)
+    valueLabel.Position = UDim2.new(0.85,0,0,0)
+    valueLabel.BackgroundTransparency = 1
+    valueLabel.TextColor3 = Color3.fromRGB(230,235,245)
+    valueLabel.Font = Enum.Font.SourceSansBold
+    valueLabel.TextSize = 14
+
+    local val = saved[name] and saved[name].value or default or min
+    local function updateSlider(v)
+        v = math.clamp(v,min,max)
+        fill.Size = UDim2.new((v-min)/(max-min),0,1,0)
+        valueLabel.Text = tostring(math.floor(v*100)/100)
+        val = v
+        pcall(callback,v)
+        UI.Elements[name].value = v
+        scheduleSave()
+    end
+    updateSlider(val)
+
+    local dragging = false
+    sliderFrame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+        end
+    end)
+    sliderFrame.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+    UIS.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local mouseX = input.Position.X - sliderFrame.AbsolutePosition.X
+            local pct = math.clamp(mouseX/sliderFrame.AbsoluteSize.X,0,1)
+            updateSlider(min + pct*(max-min))
+        end
+    end)
+
+    attachTooltip(f,desc)
+
+    UI.Elements[name] = {
+        type="slider",
+        widgets={root=f,label=lbl,slider=sliderFrame,fill=fill,valueLabel=valueLabel},
+        min=min,
+        max=max,
+        get=function() return val end,
+        set=function(v) updateSlider(v) end,
+        desc=desc,
+        value=val
+    }
+
+    if saved[name] and saved[name].value then
+        UI.Elements[name].set(saved[name].value)
+    end
+
+    return UI.Elements[name]
+end
+
     minBtn.MouseButton1Click:Connect(function()
         contentVisible=not contentVisible
         content.Visible=contentVisible
