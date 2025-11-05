@@ -1,416 +1,273 @@
-return function(config)
-    config = config or {}
-    local Name = config.Name or "DNgg Hub"
-    local Accent = config.AccentColor or Color3.fromRGB(0,130,200)
-    local ConfigName = config.ConfigName or (Name:gsub("%s+","") .. "_config.json")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
 
-    local Players = game:GetService("Players")
-    local UIS = game:GetService("UserInputService")
-    local RunService = game:GetService("RunService")
-    local TweenService = game:GetService("TweenService")
-    local LocalPlayer = Players.LocalPlayer
+getgenv().DNggUI_values = getgenv().DNggUI_values or {}
 
-    local canWrite = (type(writefile) == "function" and type(readfile) == "function" and type(isfile) == "function")
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "DNggHubUI_Lib"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = player:WaitForChild("PlayerGui")
 
-    local function clamp(v, a, b) return math.max(a, math.min(b, v)) end
-    local function safeCall(f, ...) local ok,res=pcall(f,...) if ok then return res end end
+local main = Instance.new("Frame")
+main.Name = "DNggMain"
+main.Size = UDim2.new(0, 340, 0, 260)
+main.Position = UDim2.new(0.35, 0, 0.28, 0)
+main.BackgroundColor3 = Color3.fromRGB(18, 24, 40)
+main.BorderSizePixel = 0
+main.Active = true
+main.Draggable = true
+main.Parent = screenGui
 
-    local saved = {}
-    if canWrite and isfile(ConfigName) then
-        local ok, content = pcall(readfile, ConfigName)
-        if ok and content then
-            local suc,tbl = pcall(function() return game:GetService("HttpService"):JSONDecode(content) end)
-            if suc and type(tbl)=="table" then saved = tbl end
-        end
-    end
+local title = Instance.new("TextLabel", main)
+title.Size = UDim2.new(1, -70, 0, 30)
+title.Position = UDim2.new(0, 10, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "DNgg Hub UI"
+title.TextSize = 16
+title.Font = Enum.Font.SourceSansBold
+title.TextColor3 = Color3.fromRGB(220, 230, 255)
+title.TextXAlignment = Enum.TextXAlignment.Left
 
-    local screen = Instance.new("ScreenGui")
-    screen.Name = Name:gsub("%s+","").."_UI"
-    screen.ResetOnSpawn = false
-    screen.Parent = LocalPlayer:WaitForChild("PlayerGui")
+local close = Instance.new("TextButton", main)
+close.Size = UDim2.new(0, 24, 0, 24)
+close.Position = UDim2.new(1, -30, 0, 4)
+close.Text = "X"
+close.Font = Enum.Font.SourceSansBold
+close.TextSize = 14
+close.BackgroundColor3 = Color3.fromRGB(150, 40, 40)
+close.TextColor3 = Color3.fromRGB(255,255,255)
+close.BorderSizePixel = 0
 
-    local main = Instance.new("Frame", screen)
-    main.Size = UDim2.new(0,420,0,36)
-    main.Position = UDim2.new(0.02,0,0.05,0)
-    main.BackgroundColor3 = Color3.fromRGB(16,20,30)
-    main.BorderSizePixel = 0
-    main.ClipsDescendants = true
-    local uicorner = Instance.new("UICorner", main)
-    uicorner.CornerRadius = UDim.new(0,10)
+local minimize = Instance.new("TextButton", main)
+minimize.Size = UDim2.new(0, 24, 0, 24)
+minimize.Position = UDim2.new(1, -60, 0, 4)
+minimize.Text = "-"
+minimize.Font = Enum.Font.SourceSansBold
+minimize.TextSize = 14
+minimize.BackgroundColor3 = Color3.fromRGB(45,60,90)
+minimize.TextColor3 = Color3.fromRGB(255,255,255)
+minimize.BorderSizePixel = 0
 
-    local top = Instance.new("Frame", main)
-    top.Size = UDim2.new(1,0,0,36)
-    top.Position = UDim2.new(0,0,0,0)
-    top.BackgroundColor3 = Color3.fromRGB(10,14,24)
-    top.BorderSizePixel = 0
-    local topCorner = Instance.new("UICorner", top)
-    topCorner.CornerRadius = UDim.new(0,10)
+local content = Instance.new("Frame", main)
+content.Size = UDim2.new(1, -10, 1, -40)
+content.Position = UDim2.new(0, 5, 0, 36)
+content.BackgroundTransparency = 1
+content.ClipsDescendants = true
 
-    local title = Instance.new("TextLabel", top)
-    title.Size = UDim2.new(1,-110,1,0)
-    title.Position = UDim2.new(0,12,0,0)
-    title.BackgroundTransparency = 1
-    title.Text = Name
-    title.TextColor3 = Color3.fromRGB(230,235,245)
-    title.Font = Enum.Font.SourceSansBold
-    title.TextSize = 16
-    title.TextXAlignment = Enum.TextXAlignment.Left
+local ui = {}
+ui.__index = ui
 
-    local minBtn = Instance.new("TextButton", top)
-    minBtn.Size = UDim2.new(0,36,0,24)
-    minBtn.Position = UDim2.new(1,-92,0,6)
-    minBtn.Text = "—"
-    minBtn.Font = Enum.Font.SourceSansBold
-    minBtn.TextSize = 18
-    minBtn.BackgroundColor3 = Color3.fromRGB(24,32,48)
-    minBtn.TextColor3 = Color3.fromRGB(240,240,240)
+local layout = Instance.new("UIListLayout", content)
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+layout.Padding = UDim.new(0, 6)
 
-    local closeBtn = Instance.new("TextButton", top)
-    closeBtn.Size = UDim2.new(0,36,0,24)
-    closeBtn.Position = UDim2.new(1,-48,0,6)
-    closeBtn.Text = "X"
-    closeBtn.Font = Enum.Font.SourceSansBold
-    closeBtn.TextSize = 14
-    closeBtn.BackgroundColor3 = Color3.fromRGB(150,40,40)
-    closeBtn.TextColor3 = Color3.fromRGB(255,255,255)
-
-    local tabsRow = Instance.new("Frame", main)
-    tabsRow.Size = UDim2.new(1,-24,0,40)
-    tabsRow.Position = UDim2.new(0,12,0,46)
-    tabsRow.BackgroundTransparency = 1
-    local tabsLayout = Instance.new("UIListLayout", tabsRow)
-    tabsLayout.FillDirection = Enum.FillDirection.Horizontal
-    tabsLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    tabsLayout.Padding = UDim.new(0,8)
-
-    local content = Instance.new("Frame", main)
-    content.Size = UDim2.new(1,-24,1,-110)
-    content.Position = UDim2.new(0,12,0,92)
-    content.BackgroundTransparency = 1
-    content.ClipsDescendants = true
-    local contentLayout = Instance.new("UIListLayout", content)
-    contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    contentLayout.Padding = UDim.new(0,6)
-    local contentVisible = false
-    content.Visible = false
-    tabsRow.Visible = false
-
-    local tooltip = Instance.new("TextLabel", screen)
-    tooltip.Size = UDim2.new(0,260,0,28)
-    tooltip.BackgroundColor3 = Color3.fromRGB(20,28,44)
-    tooltip.TextColor3 = Color3.fromRGB(230,240,255)
-    tooltip.Font = Enum.Font.SourceSans
-    tooltip.TextSize = 13
-    tooltip.Visible = false
-    local tooltipCorner = Instance.new("UICorner", tooltip)
-    tooltipCorner.CornerRadius = UDim.new(0,6)
-
-    UIS.InputChanged:Connect(function(inp)
-        if tooltip.Visible and inp.UserInputType==Enum.UserInputType.MouseMovement then
-            local p = inp.Position
-            tooltip.Position = UDim2.new(0,clamp(p.X+12,6,workspace.CurrentCamera.ViewportSize.X-270),0,clamp(p.Y+12,6,workspace.CurrentCamera.ViewportSize.Y-40))
-        end
-    end)
-
-    do
-        local dragging,dragInput,dragStart,startPos=false,nil,nil,nil
-        local function update(input)
-            local delta=input.Position-dragStart
-            main.Position=UDim2.new(startPos.X.Scale,startPos.X.Offset+delta.X,startPos.Y.Scale,startPos.Y.Offset+delta.Y)
-        end
-        top.InputBegan:Connect(function(input)
-            if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then
-                dragging=true
-                dragStart=input.Position
-                startPos=main.Position
-                dragInput=input
-                input.Changed:Connect(function()
-                    if input.UserInputState==Enum.UserInputState.End then dragging=false end
-                end)
-            end
-        end)
-        top.InputChanged:Connect(function(input)
-            if dragging and input==dragInput then update(input) end
-        end)
-    end
-
-    local UI={}
-    UI.Tabs={}
-    UI.Elements={}
-
-    local function persistSave()
-        if not canWrite then return end
-        local out={}
-        for name,e in pairs(UI.Elements) do
-            if e.type=="toggle" then out[name]={type="toggle",value=e.get()} end
-            if e.type=="textbox" then out[name]={type="textbox",value=e.get()} end
-            if e.type=="slider" then out[name]={type="slider",value=e.get(),min=e.min,max=e.max} end
-        end
-        pcall(function() writefile(ConfigName,game:GetService("HttpService"):JSONEncode(out)) end)
-    end
-    local function persistLoad()
-        if not canWrite or not isfile(ConfigName) then return {} end
-        local ok,content=pcall(readfile,ConfigName)
-        if not ok or not content then return {} end
-        local suc,tbl=pcall(function() return game:GetService("HttpService"):JSONDecode(content) end)
-        if suc and type(tbl)=="table" then return tbl end
-        return {}
-    end
-
-    local loadedConfig = persistLoad()
-    local saveScheduled=false
-    local function scheduleSave()
-        if not canWrite or saveScheduled then return end
-        saveScheduled=true
-        task.defer(function()
-            task.wait(0.15)
-            persistSave()
-            saveScheduled=false
-        end)
-    end
-
-    local function attachTooltip(obj,desc)
-        if not desc then return end
-        obj.MouseEnter:Connect(function()
-            local pos=UIS:GetMouseLocation()
-            tooltip.Text=desc
-            tooltip.Position=UDim2.new(0,clamp(pos.X+12,6,workspace.CurrentCamera.ViewportSize.X-270),0,clamp(pos.Y+12,6,workspace.CurrentCamera.ViewportSize.Y-40))
-            tooltip.BackgroundTransparency=1
-            tooltip.Visible=true
-            TweenService:Create(tooltip,TweenInfo.new(0.12),{BackgroundTransparency=0}):Play()
-        end)
-        obj.MouseLeave:Connect(function()
-            TweenService:Create(tooltip,TweenInfo.new(0.1),{BackgroundTransparency=1}):Play()
-            task.delay(0.11,function() tooltip.Visible=false end)
-        end)
-        obj.InputBegan:Connect(function(inp)
-            if inp.UserInputType==Enum.UserInputType.Touch then
-                local held=true
-                task.spawn(function()
-                    task.wait(0.45)
-                    if held then
-                        local pos=inp.Position or UIS:GetMouseLocation()
-                        tooltip.Text=desc
-                        tooltip.Position=UDim2.new(0,clamp(pos.X+12,6,workspace.CurrentCamera.ViewportSize.X-270),0,clamp(pos.Y+12,6,workspace.CurrentCamera.ViewportSize.Y-40))
-                        tooltip.BackgroundTransparency=0
-                        tooltip.Visible=true
-                    end
-                end)
-                inp.Changed:Connect(function()
-                    if inp.UserInputState==Enum.UserInputState.End then held=false tooltip.Visible=false end
-                end)
-            end
-        end)
-    end
-
-    local function saveUIState(tabName)
-        if not canWrite then return end
-        local ok,cfg=pcall(function() return isfile(ConfigName) and game:GetService("HttpService"):JSONDecode(readfile(ConfigName)) or {} end)
-        if type(cfg)~="table" then cfg={} end
-        cfg._lastTab=tabName
-        local pos=main.Position
-        cfg._windowPos={pos.X.Scale,pos.X.Offset,pos.Y.Scale,pos.Y.Offset}
-        pcall(function() writefile(ConfigName,game:GetService("HttpService"):JSONEncode(cfg)) end)
-    end
-
-    local function loadUIState()
-        if not canWrite or not isfile(ConfigName) then return nil,nil end
-        local ok,cfg=pcall(function() return game:GetService("HttpService"):JSONDecode(readfile(ConfigName)) end)
-        if ok and type(cfg)=="table" then return cfg._lastTab,cfg._windowPos end
-        return nil,nil
-    end
-
-    local lastTabName,lastPos = loadUIState()
-    if lastPos then main.Position=UDim2.new(lastPos[1],lastPos[2],lastPos[3],lastPos[4]) end
-
-    function UI:CreateTab(tabName)
-        local btn=Instance.new("TextButton",tabsRow)
-        btn.Size=UDim2.new(0,120,0,32)
-        btn.BackgroundColor3=Color3.fromRGB(22,28,40)
-        btn.Text=tabName
-        btn.Font=Enum.Font.SourceSansBold
-        btn.TextSize=14
-        btn.TextColor3=Color3.fromRGB(220,225,235)
-        local btnCorner=Instance.new("UICorner",btn)
-        btnCorner.CornerRadius=UDim.new(0,6)
-
-        local tabFrame=Instance.new("Frame",content)
-        tabFrame.Size=UDim2.new(1,0,1,0)
-        tabFrame.BackgroundTransparency=1
-        tabFrame.Visible=false
-        local layout=Instance.new("UIListLayout",tabFrame)
-        layout.Padding=UDim.new(0,6)
-
-        local tab={name=tabName,btn=btn,frame=tabFrame}
-        UI.Tabs[tabName]=tab
-
-        if (lastTabName and lastTabName==tabName) or not UI._selected then
-            UI._selected=tab
-            btn.BackgroundColor3=Accent
-            tabFrame.Visible=true
-            saveUIState(tabName)
-        end
-
-        btn.MouseButton1Click:Connect(function()
-            for _,v in pairs(UI.Tabs) do
-                v.btn.BackgroundColor3=Color3.fromRGB(22,28,40)
-                v.frame.Visible=false
-            end
-            btn.BackgroundColor3=Accent
-            tabFrame.Visible=true
-            UI._selected=tab
-            saveUIState(tabName)
-        end)
-
-        function tab:AddToggle(name,default,desc,callback)
-            local f=Instance.new("Frame",tabFrame);f.Size=UDim2.new(1,0,0,28);f.BackgroundTransparency=1
-            local lbl=Instance.new("TextLabel",f);lbl.Size=UDim2.new(0.68,0,1,0);lbl.BackgroundTransparency=1;lbl.Text=name;lbl.TextXAlignment=Enum.TextXAlignment.Left;lbl.Font=Enum.Font.SourceSans;lbl.TextSize=14;lbl.TextColor3=Color3.fromRGB(230,235,245)
-            local btn=Instance.new("TextButton",f);btn.Size=UDim2.new(0.28,0,0.86,0);btn.Position=UDim2.new(0.7,0,0.07,0);btn.Font=Enum.Font.SourceSansBold;btn.TextSize=14;btn.TextColor3=Color3.new(1,1,1)
-            local state=saved[name] and saved[name].value or (default and true or false)
-            btn.BackgroundColor3=state and Accent or Color3.fromRGB(60,68,82)
-            btn.Text=state and "ON" or "OFF"
-            attachTooltip(f,desc)
-            btn.MouseButton1Click:Connect(function()
-                state=not state
-                btn.BackgroundColor3=state and Accent or Color3.fromRGB(60,68,82)
-                btn.Text=state and "ON" or "OFF"
-                pcall(callback,state)
-                UI.Elements[name].value=state
-                scheduleSave()
-            end)
-            UI.Elements[name]={type="toggle",widgets={root=f,label=lbl,button=btn},get=function() return state end,set=function(v) state=not not v btn.BackgroundColor3=state and Accent or Color3.fromRGB(60,68,82) btn.Text=state and "ON" or "OFF" end,desc=desc}
-            if saved[name] and type(saved[name].value)=="boolean" then UI.Elements[name].set(saved[name].value) end
-            return UI.Elements[name]
-        end
-
-        function tab:AddButton(name,desc,callback)
-            local b=Instance.new("TextButton",tabFrame);b.Size=UDim2.new(1,0,0,32);b.BackgroundColor3=Accent;b.Font=Enum.Font.SourceSansBold;b.TextSize=14;b.TextColor3=Color3.new(1,1,1);b.Text=name
-            attachTooltip(b,desc)
-            b.MouseButton1Click:Connect(function() pcall(callback) end)
-            UI.Elements[name]={type="button",widgets={button=b},desc=desc}
-            return UI.Elements[name]
-        end
-
-        function tab:AddTextbox(name,default,desc,callback)
-            local f=Instance.new("Frame",tabFrame);f.Size=UDim2.new(1,0,0,30);f.BackgroundTransparency=1
-            local lbl=Instance.new("TextLabel",f);lbl.Size=UDim2.new(0.46,0,1,0);lbl.BackgroundTransparency=1;lbl.Text=name;lbl.TextXAlignment=Enum.TextXAlignment.Left;lbl.Font=Enum.Font.SourceSans;lbl.TextSize=14;lbl.TextColor3=Color3.fromRGB(230,235,245)
-            local box=Instance.new("TextBox",f);box.Size=UDim2.new(0.52,0,1,0);box.Position=UDim2.new(0.48,0,0,0);box.BackgroundColor3=Color3.fromRGB(30,34,42);box.TextColor3=Color3.fromRGB(235,240,245);box.Font=Enum.Font.SourceSans;box.TextSize=14
-            local initial=saved[name] and saved[name].value or tostring(default or "")
-            box.Text=initial
-            attachTooltip(f,desc)
-            box.FocusLost:Connect(function() pcall(callback,box.Text) UI.Elements[name].value=box.Text scheduleSave() end)
-            UI.Elements[name]={type="textbox",widgets={root=f,label=lbl,box=box},get=function() return box.Text end,set=function(v) box.Text=tostring(v) end,desc=desc,value=box.Text}
-            if saved[name] and saved[name].value then UI.Elements[name].set(saved[name].value) end
-            return UI.Elements[name]
-        end
-
-        return tab
-    end
-
-function tab:AddSlider(name,default,min,max,desc,callback)
-    local f = Instance.new("Frame", tabFrame)
-    f.Size = UDim2.new(1,0,0,36)
-    f.BackgroundTransparency = 1
-
-    local lbl = Instance.new("TextLabel", f)
-    lbl.Size = UDim2.new(0.4,0,1,0)
-    lbl.BackgroundTransparency = 1
-    lbl.Text = name
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    lbl.Font = Enum.Font.SourceSans
-    lbl.TextSize = 14
-    lbl.TextColor3 = Color3.fromRGB(230,235,245)
-
-    local sliderFrame = Instance.new("Frame", f)
-    sliderFrame.Size = UDim2.new(0.58,0,0.4,0)
-    sliderFrame.Position = UDim2.new(0.42,0,0.3,0)
-    sliderFrame.BackgroundColor3 = Color3.fromRGB(40,45,55)
-    sliderFrame.ClipsDescendants = true
-    local sliderCorner = Instance.new("UICorner", sliderFrame)
-    sliderCorner.CornerRadius = UDim.new(0,6)
-
-    local fill = Instance.new("Frame", sliderFrame)
-    fill.Size = UDim2.new(0,0,1,0)
-    fill.BackgroundColor3 = Color3.fromRGB(0,150,255)
-    local fillCorner = Instance.new("UICorner", fill)
-    fillCorner.CornerRadius = UDim.new(0,6)
-
-    local valueLabel = Instance.new("TextLabel", f)
-    valueLabel.Size = UDim2.new(0.15,0,1,0)
-    valueLabel.Position = UDim2.new(0.85,0,0,0)
-    valueLabel.BackgroundTransparency = 1
-    valueLabel.TextColor3 = Color3.fromRGB(230,235,245)
-    valueLabel.Font = Enum.Font.SourceSansBold
-    valueLabel.TextSize = 14
-
-    local val = saved[name] and saved[name].value or default or min
-    local function updateSlider(v)
-        v = math.clamp(v,min,max)
-        fill.Size = UDim2.new((v-min)/(max-min),0,1,0)
-        valueLabel.Text = tostring(math.floor(v*100)/100)
-        val = v
-        pcall(callback,v)
-        UI.Elements[name].value = v
-        scheduleSave()
-    end
-    updateSlider(val)
-
-    local dragging = false
-    sliderFrame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-        end
-    end)
-    sliderFrame.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-        end
-    end)
-    UIS.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local mouseX = input.Position.X - sliderFrame.AbsolutePosition.X
-            local pct = math.clamp(mouseX/sliderFrame.AbsoluteSize.X,0,1)
-            updateSlider(min + pct*(max-min))
-        end
-    end)
-
-    attachTooltip(f,desc)
-
-    UI.Elements[name] = {
-        type="slider",
-        widgets={root=f,label=lbl,slider=sliderFrame,fill=fill,valueLabel=valueLabel},
-        min=min,
-        max=max,
-        get=function() return val end,
-        set=function(v) updateSlider(v) end,
-        desc=desc,
-        value=val
-    }
-
-    if saved[name] and saved[name].value then
-        UI.Elements[name].set(saved[name].value)
-    end
-
-    return UI.Elements[name]
+local function createBaseLine()
+	local frame = Instance.new("Frame")
+	frame.Size = UDim2.new(1, 0, 0, 28)
+	frame.BackgroundTransparency = 1
+	return frame
 end
 
-    minBtn.MouseButton1Click:Connect(function()
-        contentVisible=not contentVisible
-        content.Visible=contentVisible
-        tabsRow.Visible=contentVisible
-        for _,v in pairs(UI.Tabs) do v.frame.Visible=contentVisible and (v==UI._selected) end
-        TweenService:Create(main,TweenInfo.new(0.25,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{Size=contentVisible and UDim2.new(0,420,0,340) or UDim2.new(0,420,0,36)}):Play()
-    end)
-    closeBtn.MouseButton1Click:Connect(function() pcall(function() screen:Destroy() end) end)
-
-    task.defer(function()
-        for name,data in pairs(loadedConfig) do
-            if UI.Elements[name] and data and data.value~=nil then
-                local e=UI.Elements[name]
-                if e.set then e.set(data.value) end
-            end
-        end
-    end)
-
-    return UI
+function ui:AddLabel(text)
+	local line = createBaseLine()
+	local label = Instance.new("TextLabel", line)
+	label.Size = UDim2.new(1, 0, 1, 0)
+	label.BackgroundTransparency = 1
+	label.Text = text
+	label.Font = Enum.Font.SourceSans
+	label.TextSize = 14
+	label.TextColor3 = Color3.fromRGB(230,235,255)
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	line.Parent = content
+	return label
 end
+
+function ui:AddButton(text, callback)
+	local line = createBaseLine()
+	local btn = Instance.new("TextButton", line)
+	btn.Size = UDim2.new(1, 0, 1, 0)
+	btn.BackgroundColor3 = Color3.fromRGB(45,60,90)
+	btn.BorderSizePixel = 0
+	btn.Text = text
+	btn.Font = Enum.Font.SourceSansBold
+	btn.TextSize = 14
+	btn.TextColor3 = Color3.fromRGB(255,255,255)
+	btn.MouseButton1Click:Connect(function() pcall(callback) end)
+	line.Parent = content
+	return btn
+end
+
+function ui:AddToggle(name, default, callback)
+	getgenv().DNggUI_values[name] = default and true or false
+	local line = createBaseLine()
+	local label = Instance.new("TextLabel", line)
+	label.Size = UDim2.new(0.68, 0, 1, 0)
+	label.BackgroundTransparency = 1
+	label.Text = name
+	label.Font = Enum.Font.SourceSans
+	label.TextSize = 14
+	label.TextColor3 = Color3.fromRGB(230,235,255)
+	label.TextXAlignment = Enum.TextXAlignment.Left
+
+	local btn = Instance.new("TextButton", line)
+	btn.Size = UDim2.new(0.3, 0, 1, 0)
+	btn.Position = UDim2.new(0.7, 0, 0, 0)
+	btn.BorderSizePixel = 0
+	btn.Font = Enum.Font.SourceSansBold
+	btn.TextSize = 14
+	btn.TextColor3 = Color3.fromRGB(255,255,255)
+
+	local function refresh()
+		if getgenv().DNggUI_values[name] then
+			btn.BackgroundColor3 = Color3.fromRGB(0,170,80)
+			btn.Text = "ON"
+		else
+			btn.BackgroundColor3 = Color3.fromRGB(170,40,40)
+			btn.Text = "OFF"
+		end
+	end
+
+	refresh()
+	btn.MouseButton1Click:Connect(function()
+		getgenv().DNggUI_values[name] = not getgenv().DNggUI_values[name]
+		refresh()
+		pcall(callback, getgenv().DNggUI_values[name])
+	end)
+
+	line.Parent = content
+	return {
+		Set = function(_, v) getgenv().DNggUI_values[name] = not not v; refresh(); pcall(callback, getgenv().DNggUI_values[name]) end,
+		Get = function() return getgenv().DNggUI_values[name] end
+	}
+end
+
+function ui:AddSlider(name, min, max, default, callback)
+	getgenv().DNggUI_values[name] = tonumber(default) or tonumber(min) or 0
+	local line = createBaseLine()
+	local label = Instance.new("TextLabel", line)
+	label.Size = UDim2.new(0.58, 0, 1, 0)
+	label.BackgroundTransparency = 1
+	label.Text = name .. ": " .. tostring(getgenv().DNggUI_values[name])
+	label.Font = Enum.Font.SourceSans
+	label.TextSize = 14
+	label.TextColor3 = Color3.fromRGB(230,235,255)
+	label.TextXAlignment = Enum.TextXAlignment.Left
+
+	local box = Instance.new("TextBox", line)
+	box.Size = UDim2.new(0.4, 0, 1, 0)
+	box.Position = UDim2.new(0.58, 0, 0, 0)
+	box.Text = tostring(getgenv().DNggUI_values[name])
+	box.ClearTextOnFocus = true
+	box.Font = Enum.Font.SourceSansBold
+	box.TextSize = 14
+	box.TextColor3 = Color3.fromRGB(255,255,255)
+	box.BackgroundColor3 = Color3.fromRGB(35,45,70)
+	box.BorderSizePixel = 0
+
+	local function updateVal(v)
+		local n = tonumber(v)
+		if not n then n = tonumber(min) or 0 end
+		if min and n < min then n = min end
+		if max and n > max then n = max end
+		getgenv().DNggUI_values[name] = n
+		label.Text = name .. ": " .. tostring(n)
+		box.Text = tostring(n)
+		pcall(callback, n)
+	end
+
+	box.FocusLost:Connect(function(enter)
+		updateVal(box.Text)
+	end)
+
+	line.Parent = content
+	return {
+		Set = function(_, v) updateVal(v) end,
+		Get = function() return getgenv().DNggUI_values[name] end
+	}
+end
+
+function ui:AddDropdown(name, options, defaultIndex, callback)
+	if type(options) ~= "table" or #options == 0 then options = {"Option"} end
+	local idx = tonumber(defaultIndex) or 1
+	if idx < 1 then idx = 1 end
+	if idx > #options then idx = 1 end
+	getgenv().DNggUI_values[name] = options[idx]
+
+	local line = createBaseLine()
+	local label = Instance.new("TextLabel", line)
+	label.Size = UDim2.new(0.6, 0, 1, 0)
+	label.BackgroundTransparency = 1
+	label.Text = name
+	label.Font = Enum.Font.SourceSans
+	label.TextSize = 14
+	label.TextColor3 = Color3.fromRGB(230,235,255)
+	label.TextXAlignment = Enum.TextXAlignment.Left
+
+	local btn = Instance.new("TextButton", line)
+	btn.Size = UDim2.new(0.38, 0, 1, 0)
+	btn.Position = UDim2.new(0.62, 0, 0, 0)
+	btn.Text = options[idx]
+	btn.Font = Enum.Font.SourceSansBold
+	btn.TextSize = 14
+	btn.BackgroundColor3 = Color3.fromRGB(45,60,90)
+	btn.TextColor3 = Color3.fromRGB(255,255,255)
+	btn.BorderSizePixel = 0
+
+	btn.MouseButton1Click:Connect(function()
+		idx = idx + 1
+		if idx > #options then idx = 1 end
+		getgenv().DNggUI_values[name] = options[idx]
+		btn.Text = options[idx]
+		pcall(callback, options[idx])
+	end)
+
+	line.Parent = content
+	return {
+		Set = function(_, v)
+			for i,opt in ipairs(options) do
+				if opt == v then
+					idx = i
+					getgenv().DNggUI_values[name] = v
+					btn.Text = v
+					pcall(callback, v)
+					return
+				end
+			end
+		end,
+		Get = function() return getgenv().DNggUI_values[name] end
+	}
+end
+
+DNggUI = {}
+setmetatable(DNggUI, {__index = ui})
+
+local function clearContent()
+	for _,child in ipairs(content:GetChildren()) do
+		if not (child:IsA("UIListLayout")) then
+			child:Destroy()
+		end
+	end
+end
+
+function DNggUI.Clear()
+	clearContent()
+end
+
+function DNggUI.AddLabel(text) return ui.AddLabel(ui, text) end
+function DNggUI.AddButton(text, cb) return ui.AddButton(ui, text, cb) end
+function DNggUI.AddToggle(name, default, cb) return ui.AddToggle(ui, name, default, cb) end
+function DNggUI.AddSlider(name, min, max, default, cb) return ui.AddSlider(ui, name, min, max, default, cb) end
+function DNggUI.AddDropdown(name, options, defaultIndex, cb) return ui.AddDropdown(ui, name, options, defaultIndex, cb) end
+
+close.MouseButton1Click:Connect(function()
+	screenGui:Destroy()
+end)
+
+local minimized = false
+minimize.MouseButton1Click:Connect(function()
+	minimized = not minimized
+	content.Visible = not minimized
+	main.Size = minimized and UDim2.new(0, 340, 0, 38) or UDim2.new(0, 340, 0, 260)
+end)
+
+return DNggUI
