@@ -1,14 +1,23 @@
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 
 getgenv().DNggUI_values = getgenv().DNggUI_values or {}
 getgenv().scriptName = getgenv().scriptName or "DNgg hub | Example"
 
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "DNggHubUI_Lib"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = player:WaitForChild("PlayerGui")
+local mainGui = Instance.new("ScreenGui")
+mainGui.Name = "DNggHubUI_Lib"
+mainGui.ResetOnSpawn = false
+mainGui.Parent = player:WaitForChild("PlayerGui")
+
+local notifGui = Instance.new("ScreenGui")
+notifGui.Name = "DNggHubUI_Notifs"
+notifGui.ResetOnSpawn = false
+notifGui.Parent = player:WaitForChild("PlayerGui")
+
+local TweenInfoFast = TweenInfo.new(0.23, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+local TweenInfoShort = TweenInfo.new(0.18, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
 
 local main = Instance.new("Frame")
 main.Name = "DNggMain"
@@ -18,11 +27,12 @@ main.BackgroundColor3 = Color3.fromRGB(22, 26, 40)
 main.BorderSizePixel = 0
 main.Active = true
 main.Draggable = true
-main.Parent = screenGui
-Instance.new("UICorner", main).CornerRadius = UDim.new(0, 8)
+main.Parent = mainGui
+local mainCorner = Instance.new("UICorner", main)
+mainCorner.CornerRadius = UDim.new(0, 8)
 
 local title = Instance.new("TextLabel", main)
-title.Size = UDim2.new(1, -80, 0, 32)
+title.Size = UDim2.new(1, -92, 0, 36)
 title.Position = UDim2.new(0, 12, 0, 0)
 title.BackgroundTransparency = 1
 title.Text = getgenv().scriptName
@@ -32,8 +42,8 @@ title.TextColor3 = Color3.fromRGB(235, 240, 255)
 title.TextXAlignment = Enum.TextXAlignment.Left
 
 local close = Instance.new("TextButton", main)
-close.Size = UDim2.new(0, 26, 0, 26)
-close.Position = UDim2.new(1, -34, 0, 3)
+close.Size = UDim2.new(0, 28, 0, 28)
+close.Position = UDim2.new(1, -38, 0, 4)
 close.Text = "X"
 close.Font = Enum.Font.GothamBold
 close.TextSize = 14
@@ -43,8 +53,8 @@ close.BorderSizePixel = 0
 Instance.new("UICorner", close).CornerRadius = UDim.new(0, 6)
 
 local minimize = Instance.new("TextButton", main)
-minimize.Size = UDim2.new(0, 26, 0, 26)
-minimize.Position = UDim2.new(1, -66, 0, 3)
+minimize.Size = UDim2.new(0, 28, 0, 28)
+minimize.Position = UDim2.new(1, -74, 0, 4)
 minimize.Text = "-"
 minimize.Font = Enum.Font.GothamBold
 minimize.TextSize = 14
@@ -55,8 +65,8 @@ Instance.new("UICorner", minimize).CornerRadius = UDim.new(0, 6)
 
 local content = Instance.new("ScrollingFrame", main)
 content.Name = "DNggContent"
-content.Size = UDim2.new(1, -10, 1, -48)
-content.Position = UDim2.new(0, 5, 0, 40)
+content.Size = UDim2.new(1, -12, 1, -56)
+content.Position = UDim2.new(0, 6, 0, 44)
 content.BackgroundTransparency = 1
 content.ScrollBarThickness = 6
 content.AutomaticCanvasSize = Enum.AutomaticSize.Y
@@ -70,329 +80,345 @@ layout.Padding = UDim.new(0, 10)
 local ui = {}
 ui.__index = ui
 
-local TweenInfoFast = TweenInfo.new(0.22, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+local function clamp(v,a,b) return math.max(a, math.min(b, v)) end
 
-local function updateCanvasAndResize()
-    task.defer(function()
-        task.wait(0.03)
-        local total = layout.AbsoluteContentSize.Y
-        content.CanvasSize = UDim2.new(0, 0, 0, total + 8)
-        local targetH = math.clamp(total + 92, 120, 650)
-        TweenService:Create(main, TweenInfoFast, {Size = UDim2.new(0, 360, 0, targetH)}):Play()
-    end)
+local function resizeToContent()
+	task.spawn(function()
+		task.wait(0.03)
+		local total = layout.AbsoluteContentSize.Y
+		local padded = total + 108
+		local targetH = clamp(padded, 120, 740)
+		TweenService:Create(main, TweenInfoFast, {Size = UDim2.new(0, 360, 0, targetH)}):Play()
+		content.CanvasSize = UDim2.new(0, 0, 0, total + 8)
+	end)
 end
 
-local function createDescription(parent, text)
-    if not text then return end
-    local desc = Instance.new("TextLabel")
-    desc.Parent = parent
-    desc.BackgroundTransparency = 1
-    desc.Text = tostring(text)
-    desc.Font = Enum.Font.Gotham
-    desc.TextSize = 13
-    desc.TextColor3 = Color3.fromRGB(180, 185, 200)
-    desc.TextWrapped = true
-    desc.TextXAlignment = Enum.TextXAlignment.Left
-    desc.TextYAlignment = Enum.TextYAlignment.Top
-    desc.Size = UDim2.new(1, -6, 0, 0)
-    desc.AutomaticSize = Enum.AutomaticSize.Y
-    task.defer(function()
-        task.wait(0.03)
-        if desc.AbsoluteSize.Y > 140 then
-            desc.Size = UDim2.new(1, -6, 0, 140)
-        end
-        updateCanvasAndResize()
-    end)
-    return desc
+local function makeDescription(parent, text)
+	if not text then return end
+	local container = Instance.new("Frame")
+	container.BackgroundTransparency = 1
+	container.Size = UDim2.new(1, 0, 0, 0)
+	local desc = Instance.new("TextLabel", container)
+	desc.BackgroundTransparency = 1
+	desc.Text = tostring(text)
+	desc.Font = Enum.Font.Gotham
+	desc.TextSize = 13
+	desc.TextColor3 = Color3.fromRGB(180,185,200)
+	desc.TextWrapped = true
+	desc.TextXAlignment = Enum.TextXAlignment.Left
+	desc.TextYAlignment = Enum.TextYAlignment.Top
+	desc.Size = UDim2.new(1, -8, 0, 0)
+	desc.Position = UDim2.new(0, 4, 0, 0)
+	desc.AutomaticSize = Enum.AutomaticSize.Y
+	local maxH = 140
+	desc:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+		if desc.AbsoluteSize.Y > maxH then
+			desc.Size = UDim2.new(1, -8, 0, maxH)
+		end
+		container.Size = UDim2.new(1, 0, 0, desc.AbsoluteSize.Y)
+	end)
+	return container
 end
 
-local function createLine(height)
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, 0, 0, height or 34)
-    frame.BackgroundTransparency = 1
-    local layout = Instance.new("UIListLayout", frame)
-    layout.SortOrder = Enum.SortOrder.LayoutOrder
-    layout.Padding = UDim.new(0, 4)
-    return frame
+local function makeLine(height)
+	local frame = Instance.new("Frame")
+	frame.Size = UDim2.new(1, 0, 0, height or 34)
+	frame.BackgroundTransparency = 1
+	local ll = Instance.new("UIListLayout", frame)
+	ll.SortOrder = Enum.SortOrder.LayoutOrder
+	ll.Padding = UDim.new(0, 4)
+	return frame
 end
 
 function ui:AddLabel(text, desc)
-    local line = createLine(24)
-    local lbl = Instance.new("TextLabel", line)
-    lbl.Size = UDim2.new(1, 0, 0, 20)
-    lbl.BackgroundTransparency = 1
-    lbl.Text = tostring(text)
-    lbl.Font = Enum.Font.Gotham
-    lbl.TextSize = 14
-    lbl.TextColor3 = Color3.fromRGB(230,235,255)
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    createDescription(line, desc)
-    line.Parent = content
-    updateCanvasAndResize()
-    return lbl
+	local line = makeLine(22)
+	local lbl = Instance.new("TextLabel", line)
+	lbl.Size = UDim2.new(1, 0, 0, 20)
+	lbl.BackgroundTransparency = 1
+	lbl.Text = tostring(text)
+	lbl.Font = Enum.Font.Gotham
+	lbl.TextSize = 14
+	lbl.TextColor3 = Color3.fromRGB(230,235,255)
+	lbl.TextXAlignment = Enum.TextXAlignment.Left
+	local d = makeDescription(line, desc)
+	if d then d.Parent = line end
+	line.Parent = content
+	resizeToContent()
+	return lbl
 end
 
 function ui:AddSection(text)
-    local sec = Instance.new("Frame")
-    sec.Size = UDim2.new(1, 0, 0, 36)
-    sec.BackgroundColor3 = Color3.fromRGB(28, 32, 52)
-    sec.BorderSizePixel = 0
-    Instance.new("UICorner", sec).CornerRadius = UDim.new(0, 6)
-    local lbl = Instance.new("TextLabel", sec)
-    lbl.Size = UDim2.new(1, -12, 1, 0)
-    lbl.Position = UDim2.new(0, 12, 0, 0)
-    lbl.BackgroundTransparency = 1
-    lbl.Text = tostring(text)
-    lbl.Font = Enum.Font.GothamBold
-    lbl.TextSize = 14
-    lbl.TextColor3 = Color3.fromRGB(200, 210, 230)
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    sec.Parent = content
-    updateCanvasAndResize()
-    return sec
+	local sec = Instance.new("Frame")
+	sec.Size = UDim2.new(1, 0, 0, 38)
+	sec.BackgroundColor3 = Color3.fromRGB(28,32,52)
+	sec.BorderSizePixel = 0
+	Instance.new("UICorner", sec).CornerRadius = UDim.new(0,6)
+	local lbl = Instance.new("TextLabel", sec)
+	lbl.Size = UDim2.new(1, -16, 1, 0)
+	lbl.Position = UDim2.new(0, 12, 0, 0)
+	lbl.BackgroundTransparency = 1
+	lbl.Text = tostring(text)
+	lbl.Font = Enum.Font.GothamBold
+	lbl.TextSize = 14
+	lbl.TextColor3 = Color3.fromRGB(200,210,230)
+	lbl.TextXAlignment = Enum.TextXAlignment.Left
+	sec.Parent = content
+	resizeToContent()
+	return sec
 end
 
 function ui:AddButton(text, callback, desc)
-    local line = createLine(36)
-    local btn = Instance.new("TextButton", line)
-    btn.Size = UDim2.new(1, 0, 0, 34)
-    btn.BackgroundColor3 = Color3.fromRGB(50,65,100)
-    btn.BorderSizePixel = 0
-    btn.Font = Enum.Font.GothamMedium
-    btn.TextSize = 14
-    btn.TextColor3 = Color3.fromRGB(255,255,255)
-    btn.Text = tostring(text)
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-    btn.MouseButton1Click:Connect(function()
-        pcall(callback)
-    end)
-    createDescription(line, desc)
-    line.Parent = content
-    updateCanvasAndResize()
-    return btn
+	local line = makeLine(38)
+	local btn = Instance.new("TextButton", line)
+	btn.Size = UDim2.new(1, 0, 0, 34)
+	btn.BackgroundColor3 = Color3.fromRGB(50,65,100)
+	btn.BorderSizePixel = 0
+	btn.Font = Enum.Font.GothamMedium
+	btn.TextSize = 14
+	btn.TextColor3 = Color3.fromRGB(255,255,255)
+	btn.Text = tostring(text)
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0,6)
+	btn.MouseButton1Click:Connect(function() pcall(callback) end)
+	local d = makeDescription(line, desc)
+	if d then d.Parent = line end
+	line.Parent = content
+	resizeToContent()
+	return btn
 end
 
 function ui:AddToggle(name, default, callback, desc)
-    getgenv().DNggUI_values[name] = default and true or false
-    local line = createLine(36)
-    local txt = Instance.new("TextLabel", line)
-    txt.Size = UDim2.new(0.66, 0, 0, 22)
-    txt.Position = UDim2.new(0, 0, 0, 6)
-    txt.BackgroundTransparency = 1
-    txt.Font = Enum.Font.Gotham
-    txt.TextSize = 14
-    txt.TextColor3 = Color3.fromRGB(230,235,255)
-    txt.Text = tostring(name)
-    txt.TextXAlignment = Enum.TextXAlignment.Left
-    local btn = Instance.new("TextButton", line)
-    btn.Size = UDim2.new(0.32, 0, 0, 24)
-    btn.Position = UDim2.new(0.68, 0, 0, 4)
-    btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 13
-    btn.BorderSizePixel = 0
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-    local function refresh()
-        if getgenv().DNggUI_values[name] then
-            btn.BackgroundColor3 = Color3.fromRGB(0,170,80)
-            btn.Text = "ON"
-        else
-            btn.BackgroundColor3 = Color3.fromRGB(170,40,40)
-            btn.Text = "OFF"
-        end
-    end
-    refresh()
-    btn.MouseButton1Click:Connect(function()
-        getgenv().DNggUI_values[name] = not getgenv().DNggUI_values[name]
-        refresh()
-        pcall(callback, getgenv().DNggUI_values[name])
-    end)
-    createDescription(line, desc)
-    line.Parent = content
-    updateCanvasAndResize()
-    return {
-        Set = function(_, v) getgenv().DNggUI_values[name] = not not v; refresh(); pcall(callback, getgenv().DNggUI_values[name]) end,
-        Get = function() return getgenv().DNggUI_values[name] end
-    }
+	getgenv().DNggUI_values[name] = default and true or false
+	local line = makeLine(40)
+	local txt = Instance.new("TextLabel", line)
+	txt.Size = UDim2.new(0.66, 0, 0, 20)
+	txt.Position = UDim2.new(0, 0, 0, 6)
+	txt.BackgroundTransparency = 1
+	txt.Font = Enum.Font.Gotham
+	txt.TextSize = 14
+	txt.TextColor3 = Color3.fromRGB(230,235,255)
+	txt.Text = tostring(name)
+	txt.TextXAlignment = Enum.TextXAlignment.Left
+	local btn = Instance.new("TextButton", line)
+	btn.Size = UDim2.new(0.3, 0, 0, 24)
+	btn.Position = UDim2.new(0.68, 0, 0, 6)
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 13
+	btn.BorderSizePixel = 0
+	btn.TextColor3 = Color3.fromRGB(255,255,255)
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0,6)
+	local function refresh()
+		if getgenv().DNggUI_values[name] then
+			btn.BackgroundColor3 = Color3.fromRGB(0,170,80)
+			btn.Text = "ON"
+		else
+			btn.BackgroundColor3 = Color3.fromRGB(170,40,40)
+			btn.Text = "OFF"
+		end
+	end
+	refresh()
+	btn.MouseButton1Click:Connect(function()
+		getgenv().DNggUI_values[name] = not getgenv().DNggUI_values[name]
+		refresh()
+		pcall(callback, getgenv().DNggUI_values[name])
+	end)
+	local d = makeDescription(line, desc)
+	if d then d.Parent = line end
+	line.Parent = content
+	resizeToContent()
+	return {
+		Set = function(_, v) getgenv().DNggUI_values[name] = not not v; refresh(); pcall(callback, getgenv().DNggUI_values[name]) end,
+		Get = function() return getgenv().DNggUI_values[name] end
+	}
 end
 
 function ui:AddSlider(name, min, max, default, callback, desc)
-    local minn = tonumber(min) or 0
-    local maxx = tonumber(max) or 100
-    local def = tonumber(default) or math.clamp((minn+maxx)/2, minn, maxx)
-    getgenv().DNggUI_values[name] = def
-    local line = createLine(48)
-    local label = Instance.new("TextLabel", line)
-    label.Size = UDim2.new(1, 0, 0, 20)
-    label.BackgroundTransparency = 1
-    label.Text = tostring(name) .. ": " .. tostring(def)
-    label.Font = Enum.Font.Gotham
-    label.TextSize = 13
-    label.TextColor3 = Color3.fromRGB(230,235,255)
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    local sliderBg = Instance.new("Frame", line)
-    sliderBg.Size = UDim2.new(1, 0, 0, 12)
-    sliderBg.Position = UDim2.new(0, 0, 0, 26)
-    sliderBg.BackgroundColor3 = Color3.fromRGB(35,45,70)
-    sliderBg.BorderSizePixel = 0
-    Instance.new("UICorner", sliderBg).CornerRadius = UDim.new(0, 6)
-    local knob = Instance.new("Frame", sliderBg)
-    knob.Size = UDim2.new((def-minn)/(maxx-minn + 1e-6), 0, 1, 0)
-    knob.BackgroundColor3 = Color3.fromRGB(100,140,220)
-    Instance.new("UICorner", knob).CornerRadius = UDim.new(0, 6)
-    local dragging = false
-    local function setFromX(x)
-        local abs = sliderBg.AbsoluteSize.X
-        local rx = math.clamp(x - sliderBg.AbsolutePosition.X, 0, abs)
-        local frac = rx/abs
-        local val = math.floor((minn + (maxx-minn)*frac)*100)/100
-        getgenv().DNggUI_values[name] = val
-        label.Text = tostring(name) .. ": " .. tostring(val)
-        knob:TweenSize(UDim2.new(frac,0,1,0), Enum.EasingDirection.Out, Enum.EasingStyle.Sine, 0.08, true)
-        pcall(callback, val)
-    end
-    sliderBg.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            setFromX(input.Position.X)
-        end
-    end)
-    sliderBg.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            setFromX(input.Position.X)
-        end
-    end)
-    game:GetService("UserInputService").InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-        end
-    end)
-    createDescription(line, desc)
-    line.Parent = content
-    updateCanvasAndResize()
-    return {
-        Set = function(_, v) v = tonumber(v) or minn; v = math.clamp(v, minn, maxx); getgenv().DNggUI_values[name] = v; label.Text = tostring(name) .. ": " .. tostring(v); knob.Size = UDim2.new((v-minn)/(maxx-minn + 1e-6), 0, 1, 0); pcall(callback, v) end,
-        Get = function() return getgenv().DNggUI_values[name] end
-    }
+	local minn = tonumber(min) or 0
+	local maxx = tonumber(max) or 100
+	local def = tonumber(default) or clamp((minn + maxx) / 2, minn, maxx)
+	if maxx == minn then maxx = minn + 1 end
+	getgenv().DNggUI_values[name] = def
+	local line = makeLine(54)
+	local label = Instance.new("TextLabel", line)
+	label.Size = UDim2.new(1, 0, 0, 20)
+	label.BackgroundTransparency = 1
+	label.Text = tostring(name) .. ": " .. tostring(def)
+	label.Font = Enum.Font.Gotham
+	label.TextSize = 13
+	label.TextColor3 = Color3.fromRGB(230,235,255)
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	local sliderBg = Instance.new("Frame", line)
+	sliderBg.Size = UDim2.new(1, 0, 0, 12)
+	sliderBg.Position = UDim2.new(0, 0, 0, 30)
+	sliderBg.BackgroundColor3 = Color3.fromRGB(35,45,70)
+	sliderBg.BorderSizePixel = 0
+	Instance.new("UICorner", sliderBg).CornerRadius = UDim.new(0,6)
+	local knob = Instance.new("Frame", sliderBg)
+	local frac = clamp((def - minn) / (maxx - minn), 0, 1)
+	knob.Size = UDim2.new(frac, 0, 1, 0)
+	knob.BackgroundColor3 = Color3.fromRGB(100,140,220)
+	Instance.new("UICorner", knob).CornerRadius = UDim.new(0,6)
+	local dragging = false
+	local function setFromX(x)
+		local absX = sliderBg.AbsolutePosition.X
+		local absW = sliderBg.AbsoluteSize.X
+		local rx = clamp(x - absX, 0, absW)
+		local f = rx / math.max(absW, 1)
+		local val = math.floor((minn + (maxx - minn) * f) * 100) / 100
+		getgenv().DNggUI_values[name] = val
+		label.Text = tostring(name) .. ": " .. tostring(val)
+		knob:TweenSize(UDim2.new(f, 0, 1, 0), Enum.EasingDirection.Out, Enum.EasingStyle.Sine, 0.08, true)
+		pcall(callback, val)
+	end
+	sliderBg.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			dragging = true
+			setFromX(input.Position.X)
+		end
+	end)
+	sliderBg.InputChanged:Connect(function(input)
+		if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+			setFromX(input.Position.X)
+		end
+	end)
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			dragging = false
+		end
+	end)
+	local d = makeDescription(line, desc)
+	if d then d.Parent = line end
+	line.Parent = content
+	resizeToContent()
+	return {
+		Set = function(_, v) v = tonumber(v) or minn; v = clamp(v, minn, maxx); getgenv().DNggUI_values[name] = v; label.Text = tostring(name) .. ": " .. tostring(v); local f = clamp((v - minn) / (maxx - minn), 0, 1); knob.Size = UDim2.new(f,0,1,0); pcall(callback, v) end,
+		Get = function() return getgenv().DNggUI_values[name] end
+	}
 end
 
 function ui:AddDropdown(name, options, defaultIndex, callback, desc)
-    if type(options) ~= "table" or #options == 0 then options = {"Option"} end
-    local idx = tonumber(defaultIndex) or 1
-    if idx < 1 then idx = 1 end
-    if idx > #options then idx = 1 end
-    getgenv().DNggUI_values[name] = options[idx]
-    local line = createLine(36)
-    local label = Instance.new("TextLabel", line)
-    label.Size = UDim2.new(0.6, 0, 0, 22)
-    label.Position = UDim2.new(0, 0, 0, 6)
-    label.BackgroundTransparency = 1
-    label.Text = tostring(name)
-    label.Font = Enum.Font.Gotham
-    label.TextSize = 14
-    label.TextColor3 = Color3.fromRGB(230,235,255)
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    local btn = Instance.new("TextButton", line)
-    btn.Size = UDim2.new(0.38, 0, 0, 24)
-    btn.Position = UDim2.new(0.62, 0, 0, 4)
-    btn.Text = tostring(options[idx])
-    btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 13
-    btn.BorderSizePixel = 0
-    btn.BackgroundColor3 = Color3.fromRGB(50,65,100)
-    btn.TextColor3 = Color3.fromRGB(255,255,255)
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-    btn.MouseButton1Click:Connect(function()
-        idx = idx + 1
-        if idx > #options then idx = 1 end
-        btn.Text = options[idx]
-        getgenv().DNggUI_values[name] = options[idx]
-        pcall(callback, options[idx])
-    end)
-    createDescription(line, desc)
-    line.Parent = content
-    updateCanvasAndResize()
-    return {
-        Set = function(_, v)
-            for i,opt in ipairs(options) do
-                if opt == v then
-                    idx = i
-                    getgenv().DNggUI_values[name] = v
-                    btn.Text = v
-                    pcall(callback, v)
-                    return
-                end
-            end
-        end,
-        Get = function() return getgenv().DNggUI_values[name] end
-    }
+	if type(options) ~= "table" or #options == 0 then options = {"Option"} end
+	local idx = tonumber(defaultIndex) or 1
+	idx = clamp(idx, 1, #options)
+	getgenv().DNggUI_values[name] = options[idx]
+	local line = makeLine(40)
+	local label = Instance.new("TextLabel", line)
+	label.Size = UDim2.new(0.62, 0, 0, 20)
+	label.Position = UDim2.new(0, 0, 0, 6)
+	label.BackgroundTransparency = 1
+	label.Text = tostring(name)
+	label.Font = Enum.Font.Gotham
+	label.TextSize = 14
+	label.TextColor3 = Color3.fromRGB(230,235,255)
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	local btn = Instance.new("TextButton", line)
+	btn.Size = UDim2.new(0.36, 0, 0, 24)
+	btn.Position = UDim2.new(0.64, 0, 0, 6)
+	btn.Text = tostring(options[idx])
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 13
+	btn.BorderSizePixel = 0
+	btn.BackgroundColor3 = Color3.fromRGB(50,65,100)
+	btn.TextColor3 = Color3.fromRGB(255,255,255)
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0,6)
+	btn.MouseButton1Click:Connect(function()
+		idx = idx + 1
+		if idx > #options then idx = 1 end
+		btn.Text = options[idx]
+		getgenv().DNggUI_values[name] = options[idx]
+		pcall(callback, options[idx])
+	end)
+	local d = makeDescription(line, desc)
+	if d then d.Parent = line end
+	line.Parent = content
+	resizeToContent()
+	return {
+		Set = function(_, v)
+			for i,opt in ipairs(options) do
+				if opt == v then
+					idx = i
+					getgenv().DNggUI_values[name] = v
+					btn.Text = v
+					pcall(callback, v)
+					return
+				end
+			end
+		end,
+		Get = function() return getgenv().DNggUI_values[name] end
+	}
 end
 
-local notifHolder = Instance.new("Frame", main)
-notifHolder.Name = "DNggNotifs"
-notifHolder.Size = UDim2.new(0, 300, 0, 0)
-notifHolder.Position = UDim2.new(1, -8, 0, 44)
+local notifHolder = Instance.new("Frame", notifGui)
+notifHolder.Name = "DNggNotificationHolder"
+notifHolder.Size = UDim2.new(0, 320, 0, 0)
+notifHolder.Position = UDim2.new(1, -18, 0, 18)
 notifHolder.AnchorPoint = Vector2.new(1, 0)
 notifHolder.BackgroundTransparency = 1
-notifHolder.ZIndex = 2000
 local notifLayout = Instance.new("UIListLayout", notifHolder)
 notifLayout.SortOrder = Enum.SortOrder.LayoutOrder
-notifLayout.Padding = UDim.new(0, 8)
+notifLayout.Padding = UDim.new(0, 10)
 notifLayout.VerticalAlignment = Enum.VerticalAlignment.Top
 
 function ui:Notify(titleText, message, duration)
-    duration = duration or 3
-    local box = Instance.new("Frame")
-    box.Size = UDim2.new(0, 300, 0, 0)
-    box.BackgroundColor3 = Color3.fromRGB(28, 32, 52)
-    box.BorderSizePixel = 0
-    box.Parent = notifHolder
-    box.ZIndex = 2001
-    Instance.new("UICorner", box).CornerRadius = UDim.new(0, 8)
-    local inner = Instance.new("Frame", box)
-    inner.Size = UDim2.new(1, -12, 1, -8)
-    inner.Position = UDim2.new(0, 6, 0, 6)
-    inner.BackgroundTransparency = 1
-    local tLbl = Instance.new("TextLabel", inner)
-    tLbl.BackgroundTransparency = 1
-    tLbl.Text = tostring(titleText)
-    tLbl.Font = Enum.Font.GothamBold
-    tLbl.TextSize = 14
-    tLbl.TextColor3 = Color3.fromRGB(255,255,255)
-    tLbl.Size = UDim2.new(1, 0, 0, 18)
-    tLbl.TextXAlignment = Enum.TextXAlignment.Left
-    local mLbl = Instance.new("TextLabel", inner)
-    mLbl.BackgroundTransparency = 1
-    mLbl.Text = tostring(message)
-    mLbl.Font = Enum.Font.Gotham
-    mLbl.TextSize = 13
-    mLbl.TextColor3 = Color3.fromRGB(200,200,220)
-    mLbl.AutomaticSize = Enum.AutomaticSize.Y
-    mLbl.TextWrapped = true
-    mLbl.Size = UDim2.new(1, 0, 0, 0)
-    mLbl.Position = UDim2.new(0, 0, 0, 20)
-    mLbl.TextXAlignment = Enum.TextXAlignment.Left
-    task.defer(function()
-        task.wait()
-        local targetH = math.clamp(6 + tLbl.AbsoluteSize.Y + mLbl.AbsoluteSize.Y + 6, 40, 300)
-        TweenService:Create(box, TweenInfoFast, {Size = UDim2.new(0, 300, 0, targetH)}):Play()
-    end)
-    task.delay(duration, function()
-        TweenService:Create(box, TweenInfo.new(0.2), {BackgroundTransparency = 1}):Play()
-        task.wait(0.22)
-        pcall(function() box:Destroy() end)
-    end)
+	duration = duration or 3
+	local box = Instance.new("Frame")
+	box.Size = UDim2.new(0, 320, 0, 0)
+	box.BackgroundColor3 = Color3.fromRGB(28, 32, 52)
+	box.BorderSizePixel = 0
+	box.Parent = notifHolder
+	box.ZIndex = 2001
+	Instance.new("UICorner", box).CornerRadius = UDim.new(0, 8)
+	local pad = Instance.new("Frame", box)
+	pad.Size = UDim2.new(1, -12, 1, -12)
+	pad.Position = UDim2.new(0, 6, 0, 6)
+	pad.BackgroundTransparency = 1
+	local tLbl = Instance.new("TextLabel", pad)
+	tLbl.BackgroundTransparency = 1
+	tLbl.Text = tostring(titleText)
+	tLbl.Font = Enum.Font.GothamBold
+	tLbl.TextSize = 14
+	tLbl.TextColor3 = Color3.fromRGB(255,255,255)
+	tLbl.Size = UDim2.new(1, 0, 0, 18)
+	tLbl.TextXAlignment = Enum.TextXAlignment.Left
+	local mLbl = Instance.new("TextLabel", pad)
+	mLbl.BackgroundTransparency = 1
+	mLbl.Text = tostring(message)
+	mLbl.Font = Enum.Font.Gotham
+	mLbl.TextSize = 13
+	mLbl.TextColor3 = Color3.fromRGB(200,200,220)
+	mLbl.AutomaticSize = Enum.AutomaticSize.Y
+	mLbl.TextWrapped = true
+	mLbl.Size = UDim2.new(1, 0, 0, 0)
+	mLbl.Position = UDim2.new(0, 0, 0, 20)
+	mLbl.TextXAlignment = Enum.TextXAlignment.Left
+	mLbl:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+		local targetH = clamp(12 + tLbl.AbsoluteSize.Y + mLbl.AbsoluteSize.Y + 8, 40, 320)
+		TweenService:Create(box, TweenInfoShort, {Size = UDim2.new(0,320,0,targetH)}):Play()
+	end)
+	task.delay(duration, function()
+		TweenService:Create(box, TweenInfoShort, {BackgroundTransparency = 1}):Play()
+		task.wait(0.22)
+		pcall(function() box:Destroy() end)
+	end)
 end
 
 close.MouseButton1Click:Connect(function()
-    pcall(function() screenGui:Destroy() end)
+	pcall(function() mainGui:Destroy() end)
+	pcall(function() notifGui:Destroy() end)
 end)
 
 local minimized = false
 minimize.MouseButton1Click:Connect(function()
-    minimized = not minimized
-    content.Visible = not minimized
-    local goal = minimized and UDim2.new(0,360,0,44) or UDim2.new(0,360,0,math.clamp(layout.AbsoluteContentSize.Y + 92, 120, 650))
-    TweenService:Create(main, TweenInfoFast, {Size = goal}):Play()
+	minimized = not minimized
+	content.Visible = not minimized
+	local targetH = minimized and 48 or clamp(layout.AbsoluteContentSize.Y + 108, 120, 740)
+	TweenService:Create(main, TweenInfoFast, {Size = UDim2.new(0, 360, 0, targetH)}):Play()
+end)
+
+content:GetPropertyChangedSignal("CanvasSize"):Connect(function()
+	resizeToContent()
+end)
+layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+	resizeToContent()
 end)
 
 DNggUI = {}
