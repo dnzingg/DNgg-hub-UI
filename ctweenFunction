@@ -1,0 +1,77 @@
+local TweenService = game:GetService("TweenService")
+local PathfindingService = game:GetService("PathfindingService")
+
+local module = {}
+
+local function toVector(v)
+	if typeof(v) == "CFrame" then return v.Position end
+	if typeof(v) == "Vector3" then return v end
+	if typeof(v) == "Instance" and v:IsA("BasePart") then return v.Position end
+	return nil
+end
+
+local function computePath(startPos, endPos)
+	local path = PathfindingService:CreatePath()
+	path:ComputeAsync(startPos, endPos)
+	if path.Status == Enum.PathStatus.Success then
+		return path:GetWaypoints()
+	end
+	return nil
+end
+
+local function calcTime(dist, speedMin, speedMax)
+	local t = dist / 20
+	if speedMin then
+		local minT = dist / speedMin
+		if t < minT then t = minT end
+	end
+	if speedMax then
+		local maxT = dist / speedMax
+		if t > maxT then t = maxT end
+	end
+	return t
+end
+
+function module.CTween(obj, destino, cfg)
+	cfg = cfg or {}
+
+	local speedMin = cfg.speedMin
+	local speedMax = cfg.speedMax
+	local usePath = cfg.path
+
+	local startPos = toVector(obj)
+	local goalPos = toVector(destino)
+
+	if not startPos or not goalPos then return nil end
+
+	if usePath then
+		local waypoints = computePath(startPos, goalPos)
+		if not waypoints or #waypoints < 2 then return nil end
+
+		local tweens = {}
+		local last = startPos
+
+		for i = 2, #waypoints do
+			local wp = waypoints[i].Position
+			local dist = (wp - last).Magnitude
+			local time = calcTime(dist, speedMin, speedMax)
+
+			local tw = TweenService:Create(obj, TweenInfo.new(time), {Position = wp})
+			tweens[#tweens+1] = tw
+			last = wp
+		end
+
+		return tweens
+	end
+
+	local dist = (goalPos - startPos).Magnitude
+	local time = calcTime(dist, speedMin, speedMax)
+
+	if typeof(destino) == "CFrame" then
+		return TweenService:Create(obj, TweenInfo.new(time), {CFrame = destino})
+	else
+		return TweenService:Create(obj, TweenInfo.new(time), {Position = goalPos})
+	end
+end
+
+return module
