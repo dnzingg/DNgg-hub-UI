@@ -15,6 +15,7 @@ LMG2L["DNHUB_Icon_1"] = Instance.new("ScreenGui", game:GetService("Players").Loc
 LMG2L["DNHUB_Icon_1"]["DisplayOrder"] = 99999999;
 LMG2L["DNHUB_Icon_1"]["Name"] = [[DNHUB_Icon]];
 LMG2L["DNHUB_Icon_1"]["ZIndexBehavior"] = Enum.ZIndexBehavior.Sibling;
+LMG2L["DNHUB_Icon_1"]["ResetOnSpawn"] = false;
 
 
 LMG2L["Icon_2"] = Instance.new("Frame", LMG2L["DNHUB_Icon_1"]);
