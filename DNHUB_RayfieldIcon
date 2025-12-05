@@ -20,19 +20,20 @@ LMG2L["DNHUB_Icon_1"]["ZIndexBehavior"] = Enum.ZIndexBehavior.Sibling;
 LMG2L["Icon_2"] = Instance.new("Frame", LMG2L["DNHUB_Icon_1"]);
 LMG2L["Icon_2"]["BorderSizePixel"] = 0;
 LMG2L["Icon_2"]["BackgroundColor3"] = Color3.fromRGB(255, 255, 255);
-LMG2L["Icon_2"]["Size"] = UDim2.new(0.05687, 0, 0.13801, 0);
+LMG2L["Icon_2"]["Size"] = UDim2.new(0.06845, 0, 0.16612, 0);
 LMG2L["Icon_2"]["Position"] = UDim2.new(0.09056, 0, 0.09712, 0);
 LMG2L["Icon_2"]["Name"] = [[Icon]];
-LMG2L["Icon_2"]["BackgroundTransparency"] = 1;
+LMG2L["Icon_2"]["BackgroundTransparency"] = 0.5;
 
 
 LMG2L["Button_3"] = Instance.new("ImageButton", LMG2L["Icon_2"]);
 LMG2L["Button_3"]["BorderSizePixel"] = 0;
 -- LMG2L["Button_3"]["ImageContent"] = ;
 LMG2L["Button_3"]["BackgroundColor3"] = Color3.fromRGB(24, 99, 255);
+LMG2L["Button_3"]["ZIndex"] = 10;
 LMG2L["Button_3"]["AnchorPoint"] = Vector2.new(0.5, 0.5);
 LMG2L["Button_3"]["Image"] = [[rbxassetid://13270263721]];
-LMG2L["Button_3"]["Size"] = UDim2.new(1, 0, 1, 0);
+LMG2L["Button_3"]["Size"] = UDim2.new(0.77, 0, 0.77, 0);
 LMG2L["Button_3"]["BorderColor3"] = Color3.fromRGB(0, 0, 0);
 LMG2L["Button_3"]["Name"] = [[Button]];
 LMG2L["Button_3"]["Position"] = UDim2.new(0.5, 0, 0.5, 0);
@@ -51,11 +52,19 @@ LMG2L["LocalScript_6"] = Instance.new("LocalScript", LMG2L["UIStroke_5"]);
 
 
 
-LMG2L["UIDragDetector_7"] = Instance.new("UIDragDetector", LMG2L["Button_3"]);
+LMG2L["UIDragDetector_7"] = Instance.new("UIDragDetector", LMG2L["Icon_2"]);
 LMG2L["UIDragDetector_7"]["ResponseStyle"] = Enum.UIDragDetectorResponseStyle.Scale;
 
 
-LMG2L["UIAspectRatioConstraint_8"] = Instance.new("UIAspectRatioConstraint", LMG2L["Icon_2"]);
+LMG2L["UICorner_8"] = Instance.new("UICorner", LMG2L["Icon_2"]);
+LMG2L["UICorner_8"]["CornerRadius"] = UDim.new(0.1, 0);
+
+
+LMG2L["LocalScript_9"] = Instance.new("LocalScript", LMG2L["Icon_2"]);
+
+
+
+LMG2L["UIAspectRatioConstraint_a"] = Instance.new("UIAspectRatioConstraint", LMG2L["Icon_2"]);
 
 
 
@@ -76,5 +85,22 @@ local function C_6()
 	end	
 end;
 task.spawn(C_6);
+local function C_9()
+	local script = LMG2L["LocalScript_9"];
+	local stroke = script.Parent	
+	local TS = game:GetService("TweenService")	
+	
+	local t = 0	
+	
+	while task.wait() do	
+		t = (t + 0.01) % 1	
+		local targetColor = Color3.fromHSV(t, 1, 1)	
+	
+		TS:Create(stroke, TweenInfo.new(0.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {	
+			BackgroundColor3 = targetColor	
+		}):Play()	
+	end	
+end;
+task.spawn(C_9);
 
 return LMG2L["DNHUB_Icon_1"], require;
