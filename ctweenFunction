@@ -42,7 +42,7 @@ local function resolveTarget(dest)
 	end
 end
 
-function module.CTween(obj, destino, speedMin, speedMax, usePath)
+function module.Create(obj, destino, speedMin, speedMax, usePath)
 	local originPos = getPos(obj)
 	local target = resolveTarget(destino)
 	if not originPos or not target then
