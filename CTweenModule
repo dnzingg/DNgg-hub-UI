@@ -1,0 +1,123 @@
+local TS = game:GetService("TweenService")
+local PFS = game:GetService("PathfindingService")
+local RS = game:GetService("RunService")
+
+local module = {}
+
+local function getPos(obj)
+	if obj:IsA("BasePart") then
+		return obj.Position
+	elseif obj:IsA("Model") and obj.PrimaryPart then
+		return obj.PrimaryPart.Position
+	end
+end
+
+local function applyGoal(obj, cf)
+	if obj:IsA("BasePart") then
+		return {CFrame = cf}
+	elseif obj:IsA("Model") and obj.PrimaryPart then
+		return {CFrame = cf}
+	end
+	return {}
+end
+
+local function resolveTarget(dest)
+	if typeof(dest) == "CFrame" then
+		return dest.Position
+	elseif typeof(dest) == "Vector3" then
+		return dest
+	elseif typeof(dest) == "Instance" then
+		return dest.Position or (dest.PrimaryPart and dest.PrimaryPart.Position)
+	end
+end
+
+local function calcTime(dist, minTime, maxTime)
+	local time = dist / 20
+	if minTime and time < minTime then
+		time = minTime
+	end
+	if maxTime and time > maxTime then
+		time = maxTime
+	end
+	return time
+end
+
+local function smoothCurve(points)
+	local newPoints = {}
+	for i = 2, #points - 1 do
+		local p0 = points[i - 1].Position
+		local p1 = points[i].Position
+		local p2 = points[i + 1].Position
+		for t = 0, 1, 0.25 do
+			local tt = t * t
+			local ttt = tt * t
+			local x = 0.5 * ((2 * p1.X) + (-p0.X + p2.X) * t + (2 * p0.X - 5 * p1.X + 4 * p2.X - p2.X) * tt + (-p0.X + 3 * p1.X - 3 * p2.X + p2.X) * ttt)
+			local y = 0.5 * ((2 * p1.Y) + (-p0.Y + p2.Y) * t + (2 * p0.Y - 5 * p1.Y + 4 * p2.Y - p2.Y) * tt + (-p0.Y + 3 * p1.Y - 3 * p2.Y + p2.Y) * ttt)
+			local z = 0.5 * ((2 * p1.Z) + (-p0.Z + p2.Z) * t + (2 * p0.Z - 5 * p1.Z + 4 * p2.Z - p2.Z) * tt + (-p0.Z + 3 * p1.Z - 3 * p2.Z + p2.Z) * ttt)
+			table.insert(newPoints, Vector3.new(x, y, z))
+		end
+	end
+	return newPoints
+end
+
+local function pathBlocked(fromPos, toPos)
+	local ray = RaycastParams.new()
+	ray.FilterType = Enum.RaycastFilterType.Blacklist
+	ray.FilterDescendantsInstances = {}
+
+	return workspace:Raycast(fromPos, (toPos - fromPos), ray) ~= nil
+end
+
+function module.Create(obj, destino, minTime, maxTime, usePath, pathMaxDistance)
+	local originPos = getPos(obj)
+	local target = resolveTarget(destino)
+
+	if not originPos or not target then
+		error("CTween: objeto ou destino inválido")
+	end
+
+	local dist = (originPos - target).Magnitude
+	pathMaxDistance = pathMaxDistance or 80
+
+	if not usePath or dist < pathMaxDistance then
+		local t = calcTime(dist, minTime, maxTime)
+		return TS:Create(obj, TweenInfo.new(t, Enum.EasingStyle.Linear), applyGoal(obj, CFrame.new(target)))
+	end
+
+	local path = PFS:CreatePath({
+		AgentHeight = 5,
+		AgentRadius = 3,
+		AgentCanJump = true
+	})
+
+	path:ComputeAsync(originPos, target)
+
+	local points = path:GetWaypoints()
+	if #points < 2 then
+		local t = calcTime(dist, minTime, maxTime)
+		return TS:Create(obj, TweenInfo.new(t, Enum.EasingStyle.Linear), applyGoal(obj, CFrame.new(target)))
+	end
+
+	local curvePoints = {}
+	for _, w in ipairs(points) do
+		table.insert(curvePoints, w)
+	end
+	local smooth = smoothCurve(curvePoints)
+
+	local final = smooth[#smooth] or points[#points].Position
+
+	if pathBlocked(originPos, final) then
+		path:ComputeAsync(originPos, target)
+		points = path:GetWaypoints()
+	end
+
+	local totalDist = 0
+	for i = 1, #smooth - 1 do
+		totalDist += (smooth[i + 1] - smooth[i]).Magnitude
+	end
+
+	local t = calcTime(totalDist, minTime, maxTime)
+	return TS:Create(obj, TweenInfo.new(t, Enum.EasingStyle.Linear), applyGoal(obj, CFrame.new(final)))
+end
+
+return module
