@@ -11,7 +11,7 @@ designed using localmaze gui creator
 
 local LMG2L = {};
 
-LMG2L["DNHUB_Icon_1"] = Instance.new("ScreenGui", game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui"));
+LMG2L["DNHUB_Icon_1"] = Instance.new("ScreenGui", game:GetService("CoreGui") or game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui"));
 LMG2L["DNHUB_Icon_1"]["DisplayOrder"] = 99999999;
 LMG2L["DNHUB_Icon_1"]["Name"] = [[DNHUB_Icon]];
 LMG2L["DNHUB_Icon_1"]["ZIndexBehavior"] = Enum.ZIndexBehavior.Sibling;
