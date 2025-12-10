@@ -4,59 +4,68 @@ local PFS = game:GetService("PathfindingService")
 local module = {}
 
 local function getPos(obj)
-	return obj.Position or obj.PrimaryPart and obj.PrimaryPart.Position
+	if obj:IsA("BasePart") then
+		return obj.Position
+	elseif obj:IsA("Model") and obj.PrimaryPart then
+		return obj.PrimaryPart.Position
+	end
 end
 
-local function move(obj, cf)
+local function applyGoal(obj, cf)
 	if obj:IsA("BasePart") then
 		return {CFrame = cf}
-	elseif obj:IsA("Model") then
+	elseif obj:IsA("Model") and obj.PrimaryPart then
 		return {CFrame = cf}
 	end
 	return {}
 end
 
 local function calcTime(dist, minSp, maxSp)
+	local sp = dist / 20
 	if minSp and maxSp then
-		local sp = math.clamp(dist, minSp, maxSp)
-		return dist / sp
+		sp = math.clamp(sp, minSp, maxSp)
 	elseif minSp then
-		local sp = math.max(dist, minSp)
-		return dist / sp
+		sp = math.max(sp, minSp)
 	elseif maxSp then
-		local sp = math.min(dist, maxSp)
-		return dist / sp
-	else
-		return dist / 20
+		sp = math.min(sp, maxSp)
+	end
+	return dist / sp
+end
+
+local function resolveTarget(dest)
+	if typeof(dest) == "CFrame" then
+		return dest.Position
+	elseif typeof(dest) == "Vector3" then
+		return dest
+	elseif typeof(dest) == "Instance" then
+		return dest.Position or (dest.PrimaryPart and dest.PrimaryPart.Position)
 	end
 end
 
 function module.CTween(obj, destino, speedMin, speedMax, usePath)
 	local originPos = getPos(obj)
-	local destPos = destino.Position or destino
-
-	if not originPos then
-		error("CTween: objeto inválido")
+	local target = resolveTarget(destino)
+	if not originPos or not target then
+		error("CTween: objeto ou destino inválido")
 	end
-
-	local target = typeof(destino) == "CFrame" and destino.Position or destino
 
 	if not usePath then
 		local dist = (originPos - target).Magnitude
-		local t = calcTime(dist, speedMin, speedMax)
-		local info = TweenInfo.new(t, Enum.EasingStyle.Linear)
-		local goal = move(obj, CFrame.new(target))
+		local time = calcTime(dist, speedMin, maxSp)
+		local info = TweenInfo.new(time, Enum.EasingStyle.Linear)
+		local goal = applyGoal(obj, CFrame.new(target))
 		return TS:Create(obj, info, goal)
 	end
 
-	local path = PFS:CreatePath()
+	local path = PFS:CreatePath({AgentCanJump = true})
 	path:ComputeAsync(originPos, target)
 	local points = path:GetWaypoints()
+
 	if #points < 2 then
 		local dist = (originPos - target).Magnitude
-		local t = calcTime(dist, speedMin, speedMax)
-		local info = TweenInfo.new(t, Enum.EasingStyle.Linear)
-		local goal = move(obj, CFrame.new(target))
+		local time = calcTime(dist, speedMin, speedMax)
+		local info = TweenInfo.new(time, Enum.EasingStyle.Linear)
+		local goal = applyGoal(obj, CFrame.new(target))
 		return TS:Create(obj, info, goal)
 	end
 
@@ -66,8 +75,8 @@ function module.CTween(obj, destino, speedMin, speedMax, usePath)
 	end
 
 	local time = calcTime(totalDist, speedMin, speedMax)
-	local goal = move(obj, CFrame.new(points[#points].Position))
 	local info = TweenInfo.new(time, Enum.EasingStyle.Linear)
+	local goal = applyGoal(obj, CFrame.new(points[#points].Position))
 	return TS:Create(obj, info, goal)
 end
 
