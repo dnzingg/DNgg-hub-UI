@@ -38,11 +38,6 @@ btn.Parent = icon
 local drag = Instance.new("UIDragDetector")
 drag.Parent = icon
 
-local sound = Instance.new("Sound")
-sound.SoundId = "rbxassetid://9118823109"
-sound.Volume = 1
-sound.Parent = btn
-
 btn.MouseEnter:Connect(function()
     TweenService:Create(icon, TweenInfo.new(0.15), {Size = UDim2.new(0, 66, 0, 66)}):Play()
 end)
@@ -52,7 +47,6 @@ btn.MouseLeave:Connect(function()
 end)
 
 btn.MouseButton1Click:Connect(function()
-    sound:Play()
     TweenService:Create(icon, TweenInfo.new(0.12), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play()
     task.delay(0.12, function()
         TweenService:Create(icon, TweenInfo.new(0.12), {BackgroundColor3 = Color3.fromRGB(30, 30, 30)}):Play()
