@@ -1,90 +1,91 @@
-local uiParent = (gethui and gethui()) or game:GetService("CoreGui")
-
-local G = Instance.new("ScreenGui")
-G.Name = "DNHUB_DarkButton"
-G.DisplayOrder = 10
-G.ResetOnSpawn = false
-G.ZIndexBehavior = Enum.ZIndexBehavior.Global
-G.Parent = uiParent
-
-local Btn = Instance.new("ImageButton")
-Btn.Name = "DarkButton"
-Btn.Parent = G
-Btn.Size = UDim2.fromOffset(56, 56)
-Btn.Position = UDim2.fromScale(0.06, 0.65)
-Btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-Btn.BorderSizePixel = 0
-Btn.Image = "rbxassetid://13270263721"
-
-Instance.new("UICorner", Btn).CornerRadius = UDim.new(0.25, 0)
-local gradient = Instance.new("UIGradient", Btn)
-local stroke = Instance.new("UIStroke", Btn)
-stroke.Thickness = 2
-
+local CoreGui = (gethui and gethui()) or game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
-local UIS = game:GetService("UserInputService")
 
-local dragging = false
-local offset
-local downPos
-local clicked = false
-local baseSize = Vector2.new(56, 56)
+local gui = Instance.new("ScreenGui")
+gui.Name = "DNHUB_DarkButton"
+gui.ResetOnSpawn = false
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+gui.DisplayOrder = 10
+gui.Parent = CoreGui
 
-Btn.InputBegan:Connect(function(i)
-	if i.UserInputType == Enum.UserInputType.MouseButton1 then
-		dragging = true
-		clicked = true
-		downPos = UIS:GetMouseLocation()
-		offset = Btn.AbsolutePosition - downPos
-	end
+local icon = Instance.new("Frame")
+icon.Name = "DarkButton"
+icon.Size = UDim2.new(0, 60, 0, 60)
+icon.Position = UDim2.new(0.12, 0, 0.18, 0)
+icon.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+icon.BorderSizePixel = 0
+icon.Parent = gui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 12)
+corner.Parent = icon
+
+local shadow = Instance.new("ImageLabel")
+shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+shadow.Position = UDim2.new(0.5, 0, 0.5, 0)
+shadow.Size = UDim2.new(1, 25, 1, 25)
+shadow.BackgroundTransparency = 1
+shadow.Image = "rbxassetid://1316045217"
+shadow.ImageTransparency = 0.45
+shadow.ZIndex = 0
+shadow.Parent = icon
+
+local stroke = Instance.new("UIStroke")
+stroke.Thickness = 2
+stroke.Color = Color3.fromRGB(255, 255, 255)
+stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+stroke.Parent = icon
+
+local btn = Instance.new("ImageButton")
+btn.Name = "Button"
+btn.Size = UDim2.new(0.75, 0, 0.75, 0)
+btn.AnchorPoint = Vector2.new(0.5, 0.5)
+btn.Position = UDim2.new(0.5, 0, 0.5, 0)
+btn.BackgroundTransparency = 1
+btn.Image = "rbxassetid://13270263721"
+btn.ZIndex = 5
+btn.Parent = icon
+
+local drag = Instance.new("UIDragDetector")
+drag.Parent = icon
+
+local sound = Instance.new("Sound")
+sound.SoundId = "rbxassetid://9118823108"
+sound.Volume = 1
+sound.Parent = btn
+
+btn.MouseEnter:Connect(function()
+	TweenService:Create(icon, TweenInfo.new(0.15), {Size = UDim2.new(0, 66, 0, 66)}):Play()
 end)
 
-UIS.InputChanged:Connect(function(i)
-	if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
-		local pos = UIS:GetMouseLocation() + offset
-		Btn.Position = UDim2.fromOffset(pos.X, pos.Y)
-		if (UIS:GetMouseLocation() - downPos).Magnitude > 6 then
-			clicked = false
-		end
-	end
+btn.MouseLeave:Connect(function()
+	TweenService:Create(icon, TweenInfo.new(0.15), {Size = UDim2.new(0, 60, 0, 60)}):Play()
 end)
 
-UIS.InputEnded:Connect(function(i)
-	if i.UserInputType == Enum.UserInputType.MouseButton1 then
-		if dragging then
-			dragging = false
-			if clicked then
-				local t1 = TweenService:Create(Btn, TweenInfo.new(0.08, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.fromOffset(baseSize.X + 10, baseSize.Y + 10)})
-				local t2 = TweenService:Create(Btn, TweenInfo.new(0.12, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.fromOffset(baseSize.X, baseSize.Y)})
-				t1:Play()
-				t1.Completed:Connect(function()
-					t2:Play()
-				end)
-			end
-		end
-	end
+btn.MouseButton1Click:Connect(function()
+	sound:Play()
+	TweenService:Create(icon, TweenInfo.new(0.12), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play()
+	task.delay(0.12, function()
+		TweenService:Create(icon, TweenInfo.new(0.12), {BackgroundColor3 = Color3.fromRGB(30, 30, 30)}):Play()
+	end)
 end)
 
+local hsv = 0
 task.spawn(function()
-	local t = 0
 	while task.wait() do
-		t = (t + 0.005) % 1
-		local v = 0.35 + math.sin(t * math.pi * 2) * 0.15
-		local c = Color3.fromHSV(0, 0, v)
-		gradient.Color = ColorSequence.new(ColorSequenceKeypoint.new(0, c), ColorSequenceKeypoint.new(1, c))
-		stroke.Color = c
+		hsv = (hsv + 0.005) % 1
+		local c = Color3.fromHSV(hsv, 1, 1)
+		TweenService:Create(stroke, TweenInfo.new(0.35), {Color = c}):Play()
 	end
 end)
 
-local hover = TweenService:Create(Btn, TweenInfo.new(0.15, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromRGB(30, 30, 30)})
-local leave = TweenService:Create(Btn, TweenInfo.new(0.15, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromRGB(20, 20, 20)})
-
-Btn.MouseEnter:Connect(function()
-	hover:Play()
+drag.DragEnd:Connect(function()
+	local pos = icon.Position.X.Scale
+	if pos < 0.5 then
+		TweenService:Create(icon, TweenInfo.new(0.25, Enum.EasingStyle.Quint), {Position = UDim2.new(0, 8, icon.Position.Y.Scale, 0)}):Play()
+	else
+		TweenService:Create(icon, TweenInfo.new(0.25, Enum.EasingStyle.Quint), {Position = UDim2.new(1, -68, icon.Position.Y.Scale, 0)}):Play()
+	end
 end)
 
-Btn.MouseLeave:Connect(function()
-	leave:Play()
-end)
-
-return G, Btn
+return gui
