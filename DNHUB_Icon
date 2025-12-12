@@ -12,24 +12,12 @@ local icon = Instance.new("Frame")
 icon.Name = "DarkButton"
 icon.Size = UDim2.new(0, 60, 0, 60)
 icon.Position = UDim2.new(0.12, 0, 0.18, 0)
-icon.BackgroundTransparency = 0.3
 icon.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+icon.BackgroundTransparency = 0.25
 icon.BorderSizePixel = 0
 icon.Parent = gui
 
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 12)
-corner.Parent = icon
-
-local shadow = Instance.new("ImageLabel")
-shadow.AnchorPoint = Vector2.new(0.5, 0.5)
-shadow.Position = UDim2.new(0.5, 0, 0.5, 0)
-shadow.Size = UDim2.new(1, 25, 1, 25)
-shadow.BackgroundTransparency = 1
-shadow.Image = "rbxassetid://1316045217"
-shadow.ImageTransparency = 0.45
-shadow.ZIndex = 0
-shadow.Parent = icon
+Instance.new("UICorner", icon).CornerRadius = UDim.new(0, 12)
 
 local stroke = Instance.new("UIStroke")
 stroke.Thickness = 2
@@ -51,43 +39,32 @@ local drag = Instance.new("UIDragDetector")
 drag.Parent = icon
 
 local sound = Instance.new("Sound")
-sound.SoundId = "rbxassetid://9118823108"
+sound.SoundId = "rbxassetid://9118823109"
 sound.Volume = 1
 sound.Parent = btn
 
 btn.MouseEnter:Connect(function()
-	TweenService:Create(icon, TweenInfo.new(0.15), {Size = UDim2.new(0, 66, 0, 66)}):Play()
+    TweenService:Create(icon, TweenInfo.new(0.15), {Size = UDim2.new(0, 66, 0, 66)}):Play()
 end)
 
 btn.MouseLeave:Connect(function()
-	TweenService:Create(icon, TweenInfo.new(0.15), {Size = UDim2.new(0, 60, 0, 60)}):Play()
+    TweenService:Create(icon, TweenInfo.new(0.15), {Size = UDim2.new(0, 60, 0, 60)}):Play()
 end)
 
 btn.MouseButton1Click:Connect(function()
-	sound:Play()
-	TweenService:Create(icon, TweenInfo.new(0.12), {BackgroundTransparency = 0.15}):Play()
-	task.delay(0.12, function()
-		TweenService:Create(icon, TweenInfo.new(0.12), {BackgroundTransparency = 0.3}):Play()
-	end)
+    sound:Play()
+    TweenService:Create(icon, TweenInfo.new(0.12), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play()
+    task.delay(0.12, function()
+        TweenService:Create(icon, TweenInfo.new(0.12), {BackgroundColor3 = Color3.fromRGB(30, 30, 30)}):Play()
+    end)
 end)
 
 local hsv = 0
 task.spawn(function()
-	while task.wait() do
-		hsv = (hsv + 0.005) % 1
-		local c = Color3.fromHSV(hsv, 1, 1)
-		TweenService:Create(stroke, TweenInfo.new(0.35), {Color = c}):Play()
-		TweenService:Create(icon, TweenInfo.new(0.35), {BackgroundColor3 = c}):Play()
-	end
-end)
-
-drag.DragEnd:Connect(function()
-	local pos = icon.Position.X.Scale
-	if pos < 0.5 then
-		TweenService:Create(icon, TweenInfo.new(0.25, Enum.EasingStyle.Quint), {Position = UDim2.new(0, 8, icon.Position.Y.Scale, 0)}):Play()
-	else
-		TweenService:Create(icon, TweenInfo.new(0.25, Enum.EasingStyle.Quint), {Position = UDim2.new(1, -68, icon.Position.Y.Scale, 0)}):Play()
-	end
+    while task.wait() do
+        hsv = (hsv + 0.005) % 1
+        TweenService:Create(stroke, TweenInfo.new(0.35), {Color = Color3.fromHSV(hsv, 1, 1)}):Play()
+    end
 end)
 
 return gui
