@@ -13,7 +13,7 @@ icon.Name = "DarkButton"
 icon.Size = UDim2.new(0, 60, 0, 60)
 icon.Position = UDim2.new(0.12, 0, 0.18, 0)
 icon.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-icon.BackgroundTransparency = 0.25
+icon.BackgroundTransparency = 0.4
 icon.BorderSizePixel = 0
 icon.Parent = gui
 
@@ -21,13 +21,14 @@ Instance.new("UICorner", icon).CornerRadius = UDim.new(0, 12)
 
 local stroke = Instance.new("UIStroke")
 stroke.Thickness = 2
+stroke.Transparency = 0.4
 stroke.Color = Color3.fromRGB(255, 255, 255)
 stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 stroke.Parent = icon
 
 local btn = Instance.new("ImageButton")
 btn.Name = "Button"
-btn.Size = UDim2.new(0.75, 0, 0.75, 0)
+btn.Size = UDim2.new(0.70, 0, 0.70, 0)
 btn.AnchorPoint = Vector2.new(0.5, 0.5)
 btn.Position = UDim2.new(0.5, 0, 0.5, 0)
 btn.BackgroundTransparency = 1
