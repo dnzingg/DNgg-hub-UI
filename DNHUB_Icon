@@ -1,68 +1,40 @@
 local uiParent = (gethui and gethui()) or game:GetService("CoreGui")
 
 local G = Instance.new("ScreenGui")
-G.Name = "DNHUB_Icon"
-G.DisplayOrder = 99999999
+G.Name = "DNHUB_DarkButton"
+G.DisplayOrder = 1
 G.ResetOnSpawn = false
 G.ZIndexBehavior = Enum.ZIndexBehavior.Global
 G.Parent = uiParent
 
-local I = Instance.new("Frame")
-I.Name = "Icon"
+local I = Instance.new("ImageButton")
+I.Name = "DarkButton"
 I.Parent = G
-I.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-I.BackgroundTransparency = 0.5
+I.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 I.BorderSizePixel = 0
-I.Position = UDim2.new(0.09056, 0, 0.09712, 0)
-I.Size = UDim2.new(0.06845, 0, 0.16612, 0)
+I.Position = UDim2.new(0.1, 0, 0.1, 0)
+I.Size = UDim2.new(0, 70, 0, 70)
+I.Image = "rbxassetid://13270263721"
 
-local B = Instance.new("ImageButton")
-B.Name = "Button"
-B.Parent = I
-B.AnchorPoint = Vector2.new(0.5, 0.5)
-B.Position = UDim2.new(0.5, 0, 0.5, 0)
-B.Size = UDim2.new(0.77, 0, 0.77, 0)
-B.BackgroundColor3 = Color3.fromRGB(24, 99, 255)
-B.BorderSizePixel = 0
-B.Image = "rbxassetid://13270263721"
-B.ZIndex = 10
+local corner = Instance.new("UICorner", I)
+corner.CornerRadius = UDim.new(0.25, 0)
 
-local C1 = Instance.new("UICorner", B)
-C1.CornerRadius = UDim.new(0.1, 0)
+local stroke = Instance.new("UIStroke", I)
+stroke.Thickness = 2
+stroke.Color = Color3.fromRGB(60, 60, 60)
 
-local S1 = Instance.new("UIStroke", B)
-S1.Thickness = 2
-S1.Color = Color3.new(1, 1, 1)
-
-local Drag = Instance.new("UIDragDetector")
-Drag.Parent = I
-Drag.ResponseStyle = Enum.UIDragDetectorResponseStyle.Scale
-
-local C2 = Instance.new("UICorner", I)
-C2.CornerRadius = UDim.new(0.1, 0)
-
-local ASC = Instance.new("UIAspectRatioConstraint", I)
+local drag = Instance.new("UIDragDetector")
+drag.Parent = I
 
 task.spawn(function()
 	local t = 0
 	local TS = game:GetService("TweenService")
-	local TI = TweenInfo.new(0.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+	local TI = TweenInfo.new(1.2, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
 	while task.wait() do
-		t = (t + 0.01) % 1
-		local col = Color3.fromHSV(t, 1, 1)
-		TS:Create(S1, TI, {Color = col}):Play()
+		t = (t + 0.003) % 1
+		local col = Color3.fromHSV(0, 0, 0.4 + (math.sin(t * math.pi * 2) * 0.1))
+		TS:Create(stroke, TI, {Color = col}):Play()
 	end
 end)
 
-task.spawn(function()
-	local t = 0
-	local TS = game:GetService("TweenService")
-	local TI = TweenInfo.new(0.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
-	while task.wait() do
-		t = (t + 0.01) % 1
-		local col = Color3.fromHSV(t, 1, 1)
-		TS:Create(I, TI, {BackgroundColor3 = col}):Play()
-	end
-end)
-
-return G, require
+return G, I
