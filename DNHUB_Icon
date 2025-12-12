@@ -10,38 +10,30 @@ G.Parent = uiParent
 local Btn = Instance.new("ImageButton")
 Btn.Name = "DarkButton"
 Btn.Parent = G
-Btn.Size = UDim2.new(0, 70, 0, 70)
-Btn.Position = UDim2.new(0.1, 0, 0.1, 0)
+Btn.Size = UDim2.fromOffset(70, 70)
+Btn.Position = UDim2.fromScale(0.1, 0.1)
 Btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 Btn.BorderSizePixel = 0
 Btn.Image = "rbxassetid://13270263721"
 
-local corner = Instance.new("UICorner", Btn)
-corner.CornerRadius = UDim.new(0.25, 0)
-
+Instance.new("UICorner", Btn).CornerRadius = UDim.new(0.25, 0)
 local gradient = Instance.new("UIGradient", Btn)
-gradient.Rotation = 0
-
-local stroke = Instance.new("UIStroke", Btn)
-stroke.Thickness = 2
-stroke.Color = Color3.fromRGB(60, 60, 60)
+Instance.new("UIStroke", Btn).Thickness = 2
 
 local TweenService = game:GetService("TweenService")
 local UIS = game:GetService("UserInputService")
 
 local dragging = false
 local offset
+local downPos
+local clicked = false
 
 Btn.InputBegan:Connect(function(i)
 	if i.UserInputType == Enum.UserInputType.MouseButton1 then
 		dragging = true
-		offset = Btn.AbsolutePosition - UIS:GetMouseLocation()
-	end
-end)
-
-UIS.InputEnded:Connect(function(i)
-	if i.UserInputType == Enum.UserInputType.MouseButton1 then
-		dragging = false
+		clicked = true
+		downPos = UIS:GetMouseLocation()
+		offset = Btn.AbsolutePosition - downPos
 	end
 end)
 
@@ -49,14 +41,34 @@ UIS.InputChanged:Connect(function(i)
 	if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
 		local pos = UIS:GetMouseLocation() + offset
 		Btn.Position = UDim2.fromOffset(pos.X, pos.Y)
+		if (UIS:GetMouseLocation() - downPos).Magnitude > 6 then
+			clicked = false
+		end
+	end
+end)
+
+UIS.InputEnded:Connect(function(i)
+	if i.UserInputType == Enum.UserInputType.MouseButton1 then
+		if dragging then
+			dragging = false
+			if clicked then
+				local t1 = TweenService:Create(Btn, TweenInfo.new(0.1, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.fromOffset(80, 80)})
+				local t2 = TweenService:Create(Btn, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.fromOffset(70, 70)})
+				t1:Play()
+				t1.Completed:Connect(function()
+					t2:Play()
+				end)
+			end
+		end
 	end
 end)
 
 task.spawn(function()
 	local t = 0
+	local stroke = Btn.UIStroke
 	while task.wait() do
 		t = (t + 0.006) % 1
-		local v = 0.35 + (math.sin(t * math.pi * 2) * 0.15)
+		local v = 0.35 + math.sin(t * math.pi * 2) * 0.15
 		local c = Color3.fromHSV(0, 0, v)
 		gradient.Color = ColorSequence.new(ColorSequenceKeypoint.new(0, c), ColorSequenceKeypoint.new(1, c))
 		stroke.Color = c
@@ -65,24 +77,15 @@ task.spawn(function()
 	end
 end)
 
-local hoverTween = TweenService:Create(Btn, TweenInfo.new(0.15, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromRGB(30, 30, 30)})
-local unhoverTween = TweenService:Create(Btn, TweenInfo.new(0.15, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromRGB(20, 20, 20)})
+local hover = TweenService:Create(Btn, TweenInfo.new(0.15, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromRGB(30, 30, 30)})
+local leave = TweenService:Create(Btn, TweenInfo.new(0.15, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromRGB(20, 20, 20)})
 
 Btn.MouseEnter:Connect(function()
-	hoverTween:Play()
+	hover:Play()
 end)
 
 Btn.MouseLeave:Connect(function()
-	unhoverTween:Play()
-end)
-
-Btn.MouseButton1Click:Connect(function()
-	local clickTween = TweenService:Create(Btn, TweenInfo.new(0.1, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.fromOffset(80, 80)})
-	local backTween = TweenService:Create(Btn, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.fromOffset(70, 70)})
-	clickTween:Play()
-	clickTween.Completed:Connect(function()
-		backTween:Play()
-	end)
+	leave:Play()
 end)
 
 return G, Btn
