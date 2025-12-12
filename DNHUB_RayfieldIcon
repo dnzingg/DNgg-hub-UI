@@ -1,107 +1,68 @@
---[=[
- d888b  db    db d888888b      .d888b.      db      db    db  .d8b.  
-88' Y8b 88    88   `88'        VP  `8D      88      88    88 d8' `8b 
-88      88    88    88            odD'      88      88    88 88ooo88 
-88  ooo 88    88    88          .88'        88      88    88 88~~~88 
-88. ~8~ 88b  d88   .88.        j88.         88booo. 88b  d88 88   88    @uniquadev
- Y888P  ~Y8888P' Y888888P      888888D      Y88888P ~Y8888P' YP   YP  CONVERTER 
+local uiParent = (gethui and gethui()) or game:GetService("CoreGui")
 
-designed using localmaze gui creator
-]=]
+local G = Instance.new("ScreenGui")
+G.Name = "DNHUB_Icon"
+G.DisplayOrder = 99999999
+G.ResetOnSpawn = false
+G.ZIndexBehavior = Enum.ZIndexBehavior.Global
+G.Parent = uiParent
 
-local LMG2L = {};
+local I = Instance.new("Frame")
+I.Name = "Icon"
+I.Parent = G
+I.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+I.BackgroundTransparency = 0.5
+I.BorderSizePixel = 0
+I.Position = UDim2.new(0.09056, 0, 0.09712, 0)
+I.Size = UDim2.new(0.06845, 0, 0.16612, 0)
 
-LMG2L["DNHUB_Icon_1"] = Instance.new("ScreenGui", game:GetService("CoreGui") or game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui"));
-LMG2L["DNHUB_Icon_1"]["DisplayOrder"] = 99999999;
-LMG2L["DNHUB_Icon_1"]["Name"] = [[DNHUB_Icon]];
-LMG2L["DNHUB_Icon_1"]["ZIndexBehavior"] = Enum.ZIndexBehavior.Sibling;
-LMG2L["DNHUB_Icon_1"]["ResetOnSpawn"] = false;
+local B = Instance.new("ImageButton")
+B.Name = "Button"
+B.Parent = I
+B.AnchorPoint = Vector2.new(0.5, 0.5)
+B.Position = UDim2.new(0.5, 0, 0.5, 0)
+B.Size = UDim2.new(0.77, 0, 0.77, 0)
+B.BackgroundColor3 = Color3.fromRGB(24, 99, 255)
+B.BorderSizePixel = 0
+B.Image = "rbxassetid://13270263721"
+B.ZIndex = 10
 
+local C1 = Instance.new("UICorner", B)
+C1.CornerRadius = UDim.new(0.1, 0)
 
-LMG2L["Icon_2"] = Instance.new("Frame", LMG2L["DNHUB_Icon_1"]);
-LMG2L["Icon_2"]["BorderSizePixel"] = 0;
-LMG2L["Icon_2"]["BackgroundColor3"] = Color3.fromRGB(255, 255, 255);
-LMG2L["Icon_2"]["Size"] = UDim2.new(0.06845, 0, 0.16612, 0);
-LMG2L["Icon_2"]["Position"] = UDim2.new(0.09056, 0, 0.09712, 0);
-LMG2L["Icon_2"]["Name"] = [[Icon]];
-LMG2L["Icon_2"]["BackgroundTransparency"] = 0.5;
+local S1 = Instance.new("UIStroke", B)
+S1.Thickness = 2
+S1.Color = Color3.new(1, 1, 1)
 
+local Drag = Instance.new("UIDragDetector")
+Drag.Parent = I
+Drag.ResponseStyle = Enum.UIDragDetectorResponseStyle.Scale
 
-LMG2L["Button_3"] = Instance.new("ImageButton", LMG2L["Icon_2"]);
-LMG2L["Button_3"]["BorderSizePixel"] = 0;
--- LMG2L["Button_3"]["ImageContent"] = ;
-LMG2L["Button_3"]["BackgroundColor3"] = Color3.fromRGB(24, 99, 255);
-LMG2L["Button_3"]["ZIndex"] = 10;
-LMG2L["Button_3"]["AnchorPoint"] = Vector2.new(0.5, 0.5);
-LMG2L["Button_3"]["Image"] = [[rbxassetid://13270263721]];
-LMG2L["Button_3"]["Size"] = UDim2.new(0.77, 0, 0.77, 0);
-LMG2L["Button_3"]["BorderColor3"] = Color3.fromRGB(0, 0, 0);
-LMG2L["Button_3"]["Name"] = [[Button]];
-LMG2L["Button_3"]["Position"] = UDim2.new(0.5, 0, 0.5, 0);
+local C2 = Instance.new("UICorner", I)
+C2.CornerRadius = UDim.new(0.1, 0)
 
+local ASC = Instance.new("UIAspectRatioConstraint", I)
 
-LMG2L["UICorner_4"] = Instance.new("UICorner", LMG2L["Button_3"]);
-LMG2L["UICorner_4"]["CornerRadius"] = UDim.new(0.1, 0);
+task.spawn(function()
+	local t = 0
+	local TS = game:GetService("TweenService")
+	local TI = TweenInfo.new(0.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+	while task.wait() do
+		t = (t + 0.01) % 1
+		local col = Color3.fromHSV(t, 1, 1)
+		TS:Create(S1, TI, {Color = col}):Play()
+	end
+end)
 
+task.spawn(function()
+	local t = 0
+	local TS = game:GetService("TweenService")
+	local TI = TweenInfo.new(0.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+	while task.wait() do
+		t = (t + 0.01) % 1
+		local col = Color3.fromHSV(t, 1, 1)
+		TS:Create(I, TI, {BackgroundColor3 = col}):Play()
+	end
+end)
 
-LMG2L["UIStroke_5"] = Instance.new("UIStroke", LMG2L["Button_3"]);
-LMG2L["UIStroke_5"]["Thickness"] = 2;
-LMG2L["UIStroke_5"]["Color"] = Color3.fromRGB(255, 255, 255);
-
-
-LMG2L["LocalScript_6"] = Instance.new("LocalScript", LMG2L["UIStroke_5"]);
-
-
-
-LMG2L["UIDragDetector_7"] = Instance.new("UIDragDetector", LMG2L["Icon_2"]);
-LMG2L["UIDragDetector_7"]["ResponseStyle"] = Enum.UIDragDetectorResponseStyle.Scale;
-
-
-LMG2L["UICorner_8"] = Instance.new("UICorner", LMG2L["Icon_2"]);
-LMG2L["UICorner_8"]["CornerRadius"] = UDim.new(0.1, 0);
-
-
-LMG2L["LocalScript_9"] = Instance.new("LocalScript", LMG2L["Icon_2"]);
-
-
-
-LMG2L["UIAspectRatioConstraint_a"] = Instance.new("UIAspectRatioConstraint", LMG2L["Icon_2"]);
-
-
-
-local function C_6()
-	local script = LMG2L["LocalScript_6"];
-	local stroke = script.Parent	
-	local TS = game:GetService("TweenService")	
-	
-	local t = 0	
-	
-	while task.wait() do	
-		t = (t + 0.01) % 1	
-		local targetColor = Color3.fromHSV(t, 1, 1)	
-	
-		TS:Create(stroke, TweenInfo.new(0.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {	
-			Color = targetColor	
-		}):Play()	
-	end	
-end;
-task.spawn(C_6);
-local function C_9()
-	local script = LMG2L["LocalScript_9"];
-	local stroke = script.Parent	
-	local TS = game:GetService("TweenService")	
-	
-	local t = 0	
-	
-	while task.wait() do	
-		t = (t + 0.01) % 1	
-		local targetColor = Color3.fromHSV(t, 1, 1)	
-	
-		TS:Create(stroke, TweenInfo.new(0.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {	
-			BackgroundColor3 = targetColor	
-		}):Play()	
-	end	
-end;
-task.spawn(C_9);
-
-return LMG2L["DNHUB_Icon_1"], require;
+return G, require
