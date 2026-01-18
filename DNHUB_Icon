@@ -5,7 +5,7 @@ local gui = Instance.new("ScreenGui")
 gui.Name = "DNHUB_DarkButton"
 gui.ResetOnSpawn = false
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Global
-gui.DisplayOrder = 10
+gui.DisplayOrder = 0
 gui.Parent = CoreGui
 
 local icon = Instance.new("Frame")
